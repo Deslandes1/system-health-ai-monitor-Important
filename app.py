@@ -3,11 +3,9 @@ import pandas as pd
 import numpy as np
 import random
 import time
-from datetime import datetime, timedelta
+from datetime import datetime
 import plotly.graph_objects as go
-import plotly.express as px
 from groq import Groq
-import threading
 
 # ========== PAGE CONFIG ==========
 st.set_page_config(
@@ -17,44 +15,52 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ========== CUSTOM CSS ==========
+# ========== CUSTOM CSS (LIGHT BLUE THEME) ==========
 st.markdown("""
 <style>
     .stApp {
-        background-color: #0a0f1c;
-        color: #e0e0e0;
+        background-color: #e6f4ff;
+        color: #1a2a3a;
     }
     [data-testid="stSidebar"] {
-        background-color: #0d1425;
-        border-right: 1px solid #2a3a6e;
+        background-color: #b8d9ff;
+        border-right: 1px solid #7bb3e0;
     }
     .metric-card {
-        background-color: #111827;
+        background-color: #ffffff;
         border-radius: 12px;
         padding: 1rem;
-        border-left: 4px solid #3b82f6;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        border-left: 4px solid #2c7be5;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     }
     .security-badge {
-        background-color: #0d1425;
-        border: 1px solid #00ebc7;
+        background-color: #d9ebff;
+        border: 1px solid #2c7be5;
         border-radius: 30px;
         padding: 8px 15px;
         text-align: center;
-        color: #00ebc7;
+        color: #0a4c8c;
         font-weight: bold;
         font-family: monospace;
     }
     h1, h2, h3, h4, h5, h6 {
-        color: #f0f0f0;
+        color: #0a4c8c;
+    }
+    p, li, .stMarkdown {
+        color: #1a2a3a;
     }
     .stButton>button {
-        background-color: #3b82f6;
+        background-color: #2c7be5;
         color: white;
         border-radius: 25px;
     }
     .stButton>button:hover {
-        background-color: #2563eb;
+        background-color: #1a5bbf;
+    }
+    .stMetric {
+        background-color: white;
+        border-radius: 12px;
+        padding: 0.5rem;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -77,13 +83,12 @@ groq_client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
 # ========== SIMULATE REAL-TIME METRICS ==========
 def generate_metrics():
-    """Generate random realistic system metrics."""
     cpu = random.uniform(5, 95)
     memory = random.uniform(20, 90)
     disk = random.uniform(30, 85)
     latency = random.uniform(10, 250)
     # Occasional anomalies
-    if random.random() < 0.1:  # 10% chance of spike
+    if random.random() < 0.1:
         cpu = random.uniform(95, 100)
         latency = random.uniform(250, 500)
     return {
@@ -97,31 +102,25 @@ def generate_metrics():
 def add_metric():
     metrics = generate_metrics()
     st.session_state.history.append(metrics)
-    # Keep last 100 records
     if len(st.session_state.history) > 100:
         st.session_state.history.pop(0)
-    # Check for anomalies (simple rule)
     if metrics["cpu"] > 90 or metrics["latency"] > 300:
         alert = f"⚠️ High { 'CPU' if metrics['cpu']>90 else 'Latency' }: {metrics['cpu'] if metrics['cpu']>90 else metrics['latency']}"
         st.session_state.alert_log.append({"time": metrics["timestamp"], "alert": alert})
-        # Keep last 20 alerts
         if len(st.session_state.alert_log) > 20:
             st.session_state.alert_log.pop(0)
 
-# ========== AI ANOMALY ANALYSIS (uses Groq) ==========
+# ========== AI ANOMALY ANALYSIS ==========
 def ai_analyze(metrics_df):
-    """Ask Groq to analyze recent metrics and provide insights."""
-    # Prepare last 10 rows summary
-    recent = metrics_df.tail(10)
-    summary = recent.to_string()
+    recent = metrics_df.tail(10).to_string()
     prompt = f"""You are a systems reliability engineer. Analyze the following system metrics (CPU%, Memory%, Disk%, Latency ms) and provide:
-- Brief anomaly detection (any unusual spikes or patterns)
-- Recommended action (e.g., scale resources, check process, investigate network)
+- Brief anomaly detection
+- Recommended action
 - Predicted health score (0-100)
 Respond in 3-4 short sentences.
 
-Metrics (timestamp, cpu, memory, disk, latency):
-{summary}
+Metrics:
+{recent}
 """
     try:
         completion = groq_client.chat.completions.create(
@@ -132,15 +131,15 @@ Metrics (timestamp, cpu, memory, disk, latency):
         )
         return completion.choices[0].message.content.strip()
     except Exception as e:
-        return f"Analysis temporarily unavailable: {e}"
+        return f"Analysis unavailable: {e}"
 
 # ========== SIDEBAR ==========
 with st.sidebar:
     st.title("📊 System Health AI")
     st.markdown("---")
     st.markdown("### 🛡️ Global Security Shield")
-    st.markdown('<div class="security-badge">🔐 End-to-end encryption active</div>', unsafe_allow_html=True)
-    st.caption("All data is anonymized and secured")
+    st.markdown('<div class="security-badge">🔐 Secure channel active<br>End-to-end encryption</div>', unsafe_allow_html=True)
+    st.caption("All data is anonymized")
     st.markdown("---")
     st.markdown("**Built by Gesner Deslandes**  \nEngineer‑in‑Chief, GlobalInternet.py")
     st.markdown("📞 (509) 4738 5663")
@@ -157,20 +156,18 @@ with st.sidebar:
 st.title("📈 Real‑Time System Health Monitor")
 st.caption("AI‑powered anomaly detection and predictive analytics")
 
-# Add initial data if empty
-if len(st.session_state.history) == 0:
+# Initial data
+if not st.session_state.history:
     for _ in range(20):
         add_metric()
 
-# Convert history to DataFrame
 df = pd.DataFrame(st.session_state.history)
-df["timestamp"] = pd.to_datetime(df["timestamp"])
-df.set_index("timestamp", inplace=True)
+if not df.empty:
+    df["timestamp"] = pd.to_datetime(df["timestamp"])
+    df.set_index("timestamp", inplace=True)
 
-# ---- METRICS ROWS ----
-col1, col2, col3, col4 = st.columns(4)
-latest = df.iloc[-1] if not df.empty else None
-if latest is not None:
+    latest = df.iloc[-1]
+    col1, col2, col3, col4 = st.columns(4)
     with col1:
         st.metric("💻 CPU Usage", f"{latest['cpu']}%", delta=f"{latest['cpu'] - df.iloc[-2]['cpu'] if len(df)>1 else 0:.1f}%" if len(df)>1 else None)
     with col2:
@@ -180,46 +177,46 @@ if latest is not None:
     with col4:
         st.metric("⏱️ Latency", f"{latest['latency']} ms", delta=f"{latest['latency'] - df.iloc[-2]['latency'] if len(df)>1 else 0:.1f}" if len(df)>1 else None)
 
-# ---- CHARTS ----
-st.subheader("📉 Real‑time Trends")
-fig = go.Figure()
-fig.add_trace(go.Scatter(x=df.index, y=df['cpu'], mode='lines', name='CPU %', line=dict(color='#3b82f6')))
-fig.add_trace(go.Scatter(x=df.index, y=df['memory'], mode='lines', name='Memory %', line=dict(color='#10b981')))
-fig.add_trace(go.Scatter(x=df.index, y=df['latency'], mode='lines', name='Latency (ms)', yaxis='y2', line=dict(color='#ef4444', dash='dot')))
-fig.update_layout(
-    yaxis=dict(title='Percentage (%)'),
-    yaxis2=dict(title='Latency (ms)', overlaying='y', side='right'),
-    plot_bgcolor='#0d1425',
-    paper_bgcolor='#0d1425',
-    font=dict(color='#e0e0e0'),
-    legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1)
-)
-st.plotly_chart(fig, use_container_width=True)
+    st.subheader("📉 Real‑time Trends")
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=df.index, y=df['cpu'], mode='lines', name='CPU %', line=dict(color='#2c7be5')))
+    fig.add_trace(go.Scatter(x=df.index, y=df['memory'], mode='lines', name='Memory %', line=dict(color='#10b981')))
+    fig.add_trace(go.Scatter(x=df.index, y=df['latency'], mode='lines', name='Latency (ms)', yaxis='y2', line=dict(color='#ef4444', dash='dot')))
+    fig.update_layout(
+        yaxis=dict(title='Percentage (%)', gridcolor='#cce4ff'),
+        yaxis2=dict(title='Latency (ms)', overlaying='y', side='right', gridcolor='#cce4ff'),
+        plot_bgcolor='#f0f8ff',
+        paper_bgcolor='#f0f8ff',
+        font=dict(color='#1a2a3a'),
+        legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1)
+    )
+    st.plotly_chart(fig, use_container_width=True)
 
-# ---- AI ANALYSIS SECTION ----
-st.subheader("🤖 AI Predictive Analysis")
-col_ai, col_alert = st.columns([2, 1])
-with col_ai:
-    if st.button("🧠 Run AI Anomaly Analysis"):
-        with st.spinner("AI analyzing system health..."):
-            analysis = ai_analyze(df.reset_index())
-            st.session_state.last_ai = analysis
-    if st.session_state.last_ai:
-        st.info(st.session_state.last_ai)
-with col_alert:
-    st.subheader("🚨 Live Alerts")
-    if st.session_state.alert_log:
-        for alert in st.session_state.alert_log[-5:]:
-            st.warning(f"{alert['alert']} at {alert['time'].strftime('%H:%M:%S')}")
-    else:
-        st.success("No active alerts")
+    st.subheader("🤖 AI Predictive Analysis")
+    col_ai, col_alert = st.columns([2, 1])
+    with col_ai:
+        if st.button("🧠 Run AI Anomaly Analysis"):
+            with st.spinner("AI analyzing system health..."):
+                analysis = ai_analyze(df.reset_index())
+                st.session_state.last_ai = analysis
+        if st.session_state.last_ai:
+            st.info(st.session_state.last_ai)
+    with col_alert:
+        st.subheader("🚨 Live Alerts")
+        if st.session_state.alert_log:
+            for alert in st.session_state.alert_log[-5:]:
+                st.warning(f"{alert['alert']} at {alert['time'].strftime('%H:%M:%S')}")
+        else:
+            st.success("No active alerts")
+else:
+    st.info("Collecting first metrics...")
 
-# ---- AUTO REFRESH HANDLER ----
+# ========== AUTO REFRESH ==========
 if st.session_state.auto_refresh:
     add_metric()
     time.sleep(refresh_rate)
     st.rerun()
 
-# ---- FOOTER ----
+# ========== FOOTER ==========
 st.markdown("---")
-st.caption("© 2026 GlobalInternet.py – Built for real-time system observability & AI‑assisted operations")
+st.caption("© 2026 GlobalInternet.py – Built for real‑time system observability & AI‑assisted operations")
