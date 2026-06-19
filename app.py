@@ -8,6 +8,12 @@ import tempfile
 import os
 import psutil
 import socket
+import platform
+import uuid
+import netifaces
+import urllib.request
+import json
+import re
 from datetime import datetime
 import plotly.graph_objects as go
 from groq import Groq
@@ -50,7 +56,23 @@ TEXTS = {
         "mode_label": "🔄 Monitoring Mode",
         "mode_demo": "Demo (Simulated)",
         "mode_live": "Live (Real System)",
-        "live_note": "Fetching real system metrics using psutil."
+        "live_note": "Fetching real system metrics using psutil.",
+        "sysinfo_title": "🖥️ System Information",
+        "hostname": "Hostname",
+        "os": "Operating System",
+        "processor": "Processor",
+        "cores": "Cores",
+        "memory_total": "Total Memory",
+        "memory_available": "Available Memory",
+        "memory_used": "Used Memory",
+        "memory_percent": "Memory Usage",
+        "ip_addresses": "IP Addresses",
+        "public_ip": "Public IP",
+        "mac_addresses": "MAC Addresses",
+        "network_adapters": "Network Adapters",
+        "default_gateway": "Default Gateway",
+        "dns_servers": "DNS Servers",
+        "not_available": "Not available"
     },
     "French": {
         "title": "📈 Moniteur de santé système en temps réel",
@@ -79,7 +101,23 @@ TEXTS = {
         "mode_label": "🔄 Mode de surveillance",
         "mode_demo": "Démo (simulé)",
         "mode_live": "Direct (système réel)",
-        "live_note": "Récupération des métriques réelles via psutil."
+        "live_note": "Récupération des métriques réelles via psutil.",
+        "sysinfo_title": "🖥️ Informations système",
+        "hostname": "Nom de l'hôte",
+        "os": "Système d'exploitation",
+        "processor": "Processeur",
+        "cores": "Cœurs",
+        "memory_total": "Mémoire totale",
+        "memory_available": "Mémoire disponible",
+        "memory_used": "Mémoire utilisée",
+        "memory_percent": "Utilisation mémoire",
+        "ip_addresses": "Adresses IP",
+        "public_ip": "IP publique",
+        "mac_addresses": "Adresses MAC",
+        "network_adapters": "Adaptateurs réseau",
+        "default_gateway": "Passerelle par défaut",
+        "dns_servers": "Serveurs DNS",
+        "not_available": "Non disponible"
     },
     "Spanish": {
         "title": "📈 Monitor de salud del sistema en tiempo real",
@@ -108,7 +146,23 @@ TEXTS = {
         "mode_label": "🔄 Modo de monitoreo",
         "mode_demo": "Demo (simulado)",
         "mode_live": "En vivo (sistema real)",
-        "live_note": "Obteniendo métricas reales usando psutil."
+        "live_note": "Obteniendo métricas reales usando psutil.",
+        "sysinfo_title": "🖥️ Información del sistema",
+        "hostname": "Nombre del host",
+        "os": "Sistema operativo",
+        "processor": "Procesador",
+        "cores": "Núcleos",
+        "memory_total": "Memoria total",
+        "memory_available": "Memoria disponible",
+        "memory_used": "Memoria usada",
+        "memory_percent": "Uso de memoria",
+        "ip_addresses": "Direcciones IP",
+        "public_ip": "IP pública",
+        "mac_addresses": "Direcciones MAC",
+        "network_adapters": "Adaptadores de red",
+        "default_gateway": "Puerta de enlace predeterminada",
+        "dns_servers": "Servidores DNS",
+        "not_available": "No disponible"
     }
 }
 
@@ -119,11 +173,11 @@ VOICE_MAP = {
     "Spanish": "es-ES-ElviraNeural"
 }
 
-# ========== UPDATED VOICE EXPLANATION SCRIPTS (now include Live mode) ==========
+# ========== UPDATED VOICE EXPLANATION ==========
 EXPLANATION_SCRIPT = {
-    "English": "Welcome to the System Health AI Monitor, built by Gesner Deslandes, Engineer‑in‑Chief at GlobalInternet.py. This software can monitor real‑time system metrics including CPU, memory, disk usage, and network latency. You can choose between Demo mode, which simulates random data, or Live mode, which reads actual metrics from your computer using the psutil library. It automatically detects anomalies and logs alerts. The AI analyst powered by Groq uses Llama 3.1 to provide predictive insights and recommendations. You can adjust the refresh rate, enable auto‑refresh, and run AI analysis at any time. The dashboard shows live trends and alerts. This tool is ideal for platform engineers and software architects to demonstrate observability and AI‑assisted operations.",
-    "French": "Bienvenue dans le Moniteur de santé système en temps réel, conçu par Gesner Deslandes, ingénieur en chef chez GlobalInternet.py. Ce logiciel peut surveiller des métriques système en temps réel : CPU, mémoire, disque et latence réseau. Vous pouvez choisir entre le mode Démo, qui simule des données aléatoires, ou le mode Direct, qui lit les métriques réelles de votre ordinateur à l'aide de la bibliothèque psutil. Il détecte automatiquement les anomalies et enregistre des alertes. L'analyste IA, propulsé par Groq, utilise Llama 3.1 pour fournir des analyses prédictives et des recommandations. Vous pouvez ajuster la fréquence de rafraîchissement, activer le rafraîchissement automatique et lancer l'analyse IA à tout moment. Le tableau de bord montre les tendances en direct et les alertes. Cet outil est idéal pour les ingénieurs plateforme et les architectes logiciels pour démontrer l'observabilité et les opérations assistées par IA.",
-    "Spanish": "Bienvenido al Monitor de salud del sistema en tiempo real, construido por Gesner Deslandes, ingeniero jefe de GlobalInternet.py. Este software puede monitorear métricas del sistema en tiempo real: CPU, memoria, uso de disco y latencia de red. Puede elegir entre el modo Demo, que simula datos aleatorios, o el modo En vivo, que lee métricas reales de su computadora usando la biblioteca psutil. Detecta automáticamente anomalías y registra alertas. El analista de IA, impulsado por Groq, utiliza Llama 3.1 para proporcionar información predictiva y recomendaciones. Puede ajustar la frecuencia de actualización, habilitar la actualización automática y ejecutar el análisis de IA en cualquier momento. El tablero muestra tendencias en vivo y alertas. Esta herramienta es ideal para ingenieros de plataforma y arquitectos de software para demostrar observabilidad y operaciones asistidas por IA."
+    "English": "Welcome to the System Health AI Monitor, built by Gesner Deslandes, Engineer‑in‑Chief at GlobalInternet.py. This software can monitor real‑time system metrics including CPU, memory, disk usage, and network latency. You can choose between Demo mode, which simulates random data, or Live mode, which reads actual metrics from your computer using the psutil library. It automatically detects anomalies and logs alerts. The AI analyst powered by Groq uses Llama 3.1 to provide predictive insights and recommendations. The app also displays detailed system information about your device, such as hostname, operating system, processor, memory, IP addresses, and network adapters. You can adjust the refresh rate, enable auto‑refresh, and run AI analysis at any time. The dashboard shows live trends and alerts. This tool is ideal for platform engineers and software architects to demonstrate observability and AI‑assisted operations.",
+    "French": "Bienvenue dans le Moniteur de santé système en temps réel, conçu par Gesner Deslandes, ingénieur en chef chez GlobalInternet.py. Ce logiciel peut surveiller des métriques système en temps réel : CPU, mémoire, disque et latence réseau. Vous pouvez choisir entre le mode Démo, qui simule des données aléatoires, ou le mode Direct, qui lit les métriques réelles de votre ordinateur à l'aide de la bibliothèque psutil. Il détecte automatiquement les anomalies et enregistre des alertes. L'analyste IA, propulsé par Groq, utilise Llama 3.1 pour fournir des analyses prédictives et des recommandations. L'application affiche également des informations détaillées sur votre appareil, comme le nom d'hôte, le système d'exploitation, le processeur, la mémoire, les adresses IP et les adaptateurs réseau. Vous pouvez ajuster la fréquence de rafraîchissement, activer le rafraîchissement automatique et lancer l'analyse IA à tout moment. Le tableau de bord montre les tendances en direct et les alertes. Cet outil est idéal pour les ingénieurs plateforme et les architectes logiciels pour démontrer l'observabilité et les opérations assistées par IA.",
+    "Spanish": "Bienvenido al Monitor de salud del sistema en tiempo real, construido por Gesner Deslandes, ingeniero jefe de GlobalInternet.py. Este software puede monitorear métricas del sistema en tiempo real: CPU, memoria, uso de disco y latencia de red. Puede elegir entre el modo Demo, que simula datos aleatorios, o el modo En vivo, que lee métricas reales de su computadora usando la biblioteca psutil. Detecta automáticamente anomalías y registra alertas. El analista de IA, impulsado por Groq, utiliza Llama 3.1 para proporcionar información predictiva y recomendaciones. La aplicación también muestra información detallada del sistema, como el nombre del host, el sistema operativo, el procesador, la memoria, las direcciones IP y los adaptadores de red. Puede ajustar la frecuencia de actualización, habilitar la actualización automática y ejecutar el análisis de IA en cualquier momento. El tablero muestra tendencias en vivo y alertas. Esta herramienta es ideal para ingenieros de plataforma y arquitectos de software para demostrar observabilidad y operaciones asistidas por IA."
 }
 
 # ========== SESSION STATE ==========
@@ -140,7 +194,7 @@ if "lang" not in st.session_state:
 if "monitor_mode" not in st.session_state:
     st.session_state.monitor_mode = "Demo (Simulated)"
 
-# ========== CUSTOM CSS (LIGHT BLUE THEME) ==========
+# ========== CUSTOM CSS ==========
 st.markdown("""
 <style>
     .stApp { background-color: #e6f4ff; color: #1a2a3a; }
@@ -152,6 +206,8 @@ st.markdown("""
     .stButton>button:hover { background-color: #1a5bbf; }
     .stMetric { background-color: white; border-radius: 12px; padding: 0.5rem; }
     .profile-img { border-radius: 50%; border: 2px solid #2c7be5; }
+    .sysinfo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .sysinfo-item { background: white; padding: 10px; border-radius: 8px; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -161,7 +217,7 @@ if "GROQ_API_KEY" not in st.secrets:
     st.stop()
 groq_client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
-# ========== HELPER: GENERATE VOICE (ASYNC) ==========
+# ========== HELPER: GENERATE VOICE ==========
 def generate_voice(lang, text):
     voice = VOICE_MAP.get(lang, "en-US-JennyNeural")
     try:
@@ -182,6 +238,95 @@ def generate_voice(lang, text):
     except Exception as e:
         st.error(f"{TEXTS[lang]['explain_error']} {e}")
         return None
+
+# ========== SYSTEM INFORMATION COLLECTOR ==========
+def get_system_info():
+    info = {}
+    try:
+        info["hostname"] = socket.gethostname()
+    except:
+        info["hostname"] = "N/A"
+    try:
+        info["os"] = f"{platform.system()} {platform.release()} ({platform.version()})"
+    except:
+        info["os"] = "N/A"
+    try:
+        info["processor"] = platform.processor()
+        if not info["processor"]:
+            info["processor"] = "Unknown"
+    except:
+        info["processor"] = "N/A"
+    try:
+        info["cores"] = psutil.cpu_count(logical=True)
+    except:
+        info["cores"] = "N/A"
+    try:
+        mem = psutil.virtual_memory()
+        info["memory_total"] = mem.total
+        info["memory_available"] = mem.available
+        info["memory_used"] = mem.used
+        info["memory_percent"] = mem.percent
+    except:
+        info["memory_total"] = info["memory_available"] = info["memory_used"] = info["memory_percent"] = "N/A"
+    # IP addresses
+    ip_list = []
+    mac_list = []
+    adapter_info = {}
+    try:
+        for iface, addrs in psutil.net_if_addrs().items():
+            for addr in addrs:
+                if addr.family == socket.AF_INET:
+                    ip_list.append((iface, addr.address))
+                elif addr.family == psutil.AF_LINK:
+                    mac_list.append((iface, addr.address))
+            # adapter speed and status
+            stats = psutil.net_if_stats().get(iface)
+            if stats:
+                adapter_info[iface] = {"speed": stats.speed, "isup": stats.isup}
+    except:
+        pass
+    info["ip_addresses"] = ip_list
+    info["mac_addresses"] = mac_list
+    info["network_adapters"] = adapter_info
+    # Default gateway
+    try:
+        gateway = netifaces.gateways()['default'][netifaces.AF_INET][0]
+        info["default_gateway"] = gateway
+    except:
+        info["default_gateway"] = "N/A"
+    # DNS servers (simple attempt)
+    dns = []
+    try:
+        if platform.system() == "Windows":
+            import subprocess
+            output = subprocess.check_output("ipconfig /all", shell=True, text=True)
+            lines = output.splitlines()
+            for line in lines:
+                if "DNS Servers" in line:
+                    parts = line.split(":")
+                    if len(parts) > 1:
+                        dns.append(parts[1].strip())
+        else:
+            with open("/etc/resolv.conf", "r") as f:
+                for line in f:
+                    if "nameserver" in line:
+                        dns.append(line.split()[1])
+    except:
+        pass
+    info["dns_servers"] = dns if dns else ["N/A"]
+    # Public IP
+    try:
+        with urllib.request.urlopen("https://api.ipify.org?format=json", timeout=3) as response:
+            data = json.loads(response.read().decode())
+            info["public_ip"] = data.get("ip", "N/A")
+    except:
+        try:
+            with urllib.request.urlopen("https://httpbin.org/ip", timeout=3) as response:
+                data = json.loads(response.read().decode())
+                info["public_ip"] = data.get("origin", "N/A")
+        except:
+            info["public_ip"] = "N/A"
+    return info
 
 # ========== METRICS GENERATION ==========
 def generate_simulated_metrics():
@@ -236,7 +381,7 @@ def add_metric():
         if len(st.session_state.alert_log) > 20:
             st.session_state.alert_log.pop(0)
 
-# ========== AI ANALYSIS (Translated) ==========
+# ========== AI ANALYSIS ==========
 def ai_analyze(metrics_df, lang):
     recent = metrics_df.tail(10).to_string()
     if lang == "English":
@@ -280,9 +425,60 @@ Métricas:
     except Exception as e:
         return f"{TEXTS[lang]['ai_unavailable']}: {e}"
 
+# ========== DISPLAY SYSTEM INFORMATION ==========
+def display_system_info(texts):
+    info = get_system_info()
+    with st.expander(f"{texts['sysinfo_title']}", expanded=True):
+        col1, col2 = st.columns(2)
+        with col1:
+            st.markdown(f"**{texts['hostname']}:** {info['hostname']}")
+            st.markdown(f"**{texts['os']}:** {info['os']}")
+            st.markdown(f"**{texts['processor']}:** {info['processor']}")
+            st.markdown(f"**{texts['cores']}:** {info['cores']}")
+            st.markdown(f"**{texts['default_gateway']}:** {info['default_gateway']}")
+            dns_str = ", ".join(info['dns_servers'])
+            st.markdown(f"**{texts['dns_servers']}:** {dns_str}")
+        with col2:
+            mem_total = info['memory_total'] if info['memory_total'] != "N/A" else "N/A"
+            mem_avail = info['memory_available'] if info['memory_available'] != "N/A" else "N/A"
+            mem_used = info['memory_used'] if info['memory_used'] != "N/A" else "N/A"
+            mem_percent = info['memory_percent'] if info['memory_percent'] != "N/A" else "N/A"
+            if mem_total != "N/A":
+                mem_total = f"{mem_total / (1024**3):.2f} GB"
+            if mem_avail != "N/A":
+                mem_avail = f"{mem_avail / (1024**3):.2f} GB"
+            if mem_used != "N/A":
+                mem_used = f"{mem_used / (1024**3):.2f} GB"
+            st.markdown(f"**{texts['memory_total']}:** {mem_total}")
+            st.markdown(f"**{texts['memory_available']}:** {mem_avail}")
+            st.markdown(f"**{texts['memory_used']}:** {mem_used}")
+            st.markdown(f"**{texts['memory_percent']}:** {mem_percent}%")
+            st.markdown(f"**{texts['public_ip']}:** {info['public_ip']}")
+        # IP and MAC addresses
+        st.markdown("---")
+        st.markdown(f"**{texts['ip_addresses']}:**")
+        if info['ip_addresses']:
+            for iface, ip in info['ip_addresses']:
+                st.markdown(f"- {iface}: {ip}")
+        else:
+            st.markdown(f"*{texts['not_available']}*")
+        st.markdown(f"**{texts['mac_addresses']}:**")
+        if info['mac_addresses']:
+            for iface, mac in info['mac_addresses']:
+                st.markdown(f"- {iface}: {mac}")
+        else:
+            st.markdown(f"*{texts['not_available']}*")
+        st.markdown(f"**{texts['network_adapters']}:**")
+        if info['network_adapters']:
+            for iface, details in info['network_adapters'].items():
+                status = "🟢 Up" if details['isup'] else "🔴 Down"
+                speed = f"{details['speed']} Mbps" if details['speed'] else "Unknown"
+                st.markdown(f"- {iface}: {status}, {speed}")
+        else:
+            st.markdown(f"*{texts['not_available']}*")
+
 # ========== SIDEBAR ==========
 with st.sidebar:
-    # ---- PROFILE PICTURE AND NAME ----
     st.image(
         "https://raw.githubusercontent.com/Deslandes1/system-health-ai-monitor-Important/main/Gesner%20Deslandes.png",
         width=80,
@@ -300,7 +496,6 @@ with st.sidebar:
     texts = TEXTS[st.session_state.lang]
     
     st.markdown("---")
-    # ---- Monitoring Mode Toggle ----
     mode_options = ["Demo (Simulated)", "Live (Real System)"]
     selected_mode = st.selectbox(texts["mode_label"], mode_options, index=0)
     if selected_mode != st.session_state.monitor_mode:
@@ -320,7 +515,6 @@ with st.sidebar:
     st.markdown("✉️ deslandes78@gmail.com")
     st.markdown("---")
     
-    # AI Voice Explanation Button
     if st.button(texts["explain_btn"], use_container_width=True):
         with st.spinner(texts["generating_audio"]):
             script = EXPLANATION_SCRIPT[st.session_state.lang]
@@ -344,6 +538,10 @@ texts = TEXTS[st.session_state.lang]
 st.title(texts["title"])
 st.caption(texts["caption"])
 
+# ---- Display System Information ----
+display_system_info(texts)
+
+# ---- Metrics Dashboard ----
 if not st.session_state.history:
     for _ in range(20):
         add_metric()
