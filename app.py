@@ -58,6 +58,7 @@ TEXTS = {
         "mode_live": "Live (Real System)",
         "live_note": "Fetching real system metrics using psutil.",
         "sysinfo_title": "🖥️ System Information",
+        "sysinfo_note": "ℹ️ This information reflects the server hosting this application, not your local device.",
         "device_type": "Device Type",
         "brand": "Brand",
         "model": "Model",
@@ -77,7 +78,8 @@ TEXTS = {
         "dns_servers": "DNS Servers",
         "not_available": "Not available",
         "device_desktop": "Desktop",
-        "device_laptop": "Laptop"
+        "device_laptop": "Laptop",
+        "device_unknown": "Unknown"
     },
     "French": {
         "title": "📈 Moniteur de santé système en temps réel",
@@ -108,6 +110,7 @@ TEXTS = {
         "mode_live": "Direct (système réel)",
         "live_note": "Récupération des métriques réelles via psutil.",
         "sysinfo_title": "🖥️ Informations système",
+        "sysinfo_note": "ℹ️ Ces informations reflètent le serveur hébergeant cette application, pas votre appareil local.",
         "device_type": "Type d'appareil",
         "brand": "Marque",
         "model": "Modèle",
@@ -127,7 +130,8 @@ TEXTS = {
         "dns_servers": "Serveurs DNS",
         "not_available": "Non disponible",
         "device_desktop": "Ordinateur de bureau",
-        "device_laptop": "Ordinateur portable"
+        "device_laptop": "Ordinateur portable",
+        "device_unknown": "Inconnu"
     },
     "Spanish": {
         "title": "📈 Monitor de salud del sistema en tiempo real",
@@ -158,6 +162,7 @@ TEXTS = {
         "mode_live": "En vivo (sistema real)",
         "live_note": "Obteniendo métricas reales usando psutil.",
         "sysinfo_title": "🖥️ Información del sistema",
+        "sysinfo_note": "ℹ️ Esta información refleja el servidor que aloja esta aplicación, no su dispositivo local.",
         "device_type": "Tipo de dispositivo",
         "brand": "Marca",
         "model": "Modelo",
@@ -177,7 +182,8 @@ TEXTS = {
         "dns_servers": "Servidores DNS",
         "not_available": "No disponible",
         "device_desktop": "Escritorio",
-        "device_laptop": "Portátil"
+        "device_laptop": "Portátil",
+        "device_unknown": "Desconocido"
     }
 }
 
@@ -220,6 +226,7 @@ st.markdown("""
     .stButton>button:hover { background-color: #1a5bbf; }
     .stMetric { background-color: white; border-radius: 12px; padding: 0.5rem; }
     .profile-img { border-radius: 50%; border: 2px solid #2c7be5; }
+    .info-note { background-color: #e6f4ff; border-left: 3px solid #2c7be5; padding: 8px 12px; border-radius: 4px; margin-bottom: 10px; font-size: 0.9rem; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -286,13 +293,69 @@ def get_system_info():
     except:
         info["memory_total"] = info["memory_available"] = info["memory_used"] = info["memory_percent"] = "N/A"
     
-    # ----- Device type (Laptop/Desktop) – with try/except -----
+    # ----- Device type detection (improved) -----
+    device_type = "Unknown"
     try:
+        # 1. Check battery
         battery = psutil.sensors_battery()
-        info["device_type"] = "Laptop" if battery is not None else "Desktop"
+        if battery is not None:
+            device_type = "Laptop"
+        else:
+            # 2. If no battery, try chassis type on Linux
+            if platform.system() == "Linux":
+                try:
+                    with open("/sys/class/dmi/id/chassis_type") as f:
+                        chassis = f.read().strip()
+                        # Common chassis types: 10 = Notebook, 11 = Handheld, 14 = Sub-notebook, 30 = Tablet
+                        if chassis in ["10", "11", "14", "30"]:
+                            device_type = "Laptop"
+                        else:
+                            device_type = "Desktop"
+                except:
+                    # Fallback: check model name for keywords
+                    try:
+                        with open("/sys/class/dmi/id/product_name") as f:
+                            model = f.read().strip().lower()
+                            if any(word in model for word in ["laptop", "notebook", "tablet", "convertible"]):
+                                device_type = "Laptop"
+                            else:
+                                device_type = "Desktop"
+                    except:
+                        device_type = "Desktop"  # default
+            elif platform.system() == "Windows":
+                # Try to read chassis type from registry (or fallback)
+                try:
+                    import winreg
+                    key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SYSTEM\CurrentControlSet\Control\SystemInformation")
+                    chassis = winreg.QueryValueEx(key, "SystemChassisType")[0]
+                    # Chassis types: 1=Desktop, 2=Laptop, etc. (simplified)
+                    if chassis in [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50]:
+                        device_type = "Laptop"
+                    else:
+                        device_type = "Desktop"
+                except:
+                    # fallback to model
+                    try:
+                        key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SYSTEM\CurrentControlSet\Control\SystemInformation")
+                        model = winreg.QueryValueEx(key, "SystemProductName")[0].lower()
+                        if any(word in model for word in ["laptop", "notebook", "tablet", "surface", "idea", "yoga", "thinkpad"]):
+                            device_type = "Laptop"
+                        else:
+                            device_type = "Desktop"
+                    except:
+                        device_type = "Desktop"
+            elif platform.system() == "Darwin":  # macOS
+                # All Macs with a battery are laptops
+                if battery is not None:
+                    device_type = "Laptop"
+                else:
+                    device_type = "Desktop"
+            else:
+                device_type = "Desktop"  # default for unknown
     except Exception:
-        # If battery info is unavailable, assume Desktop (or "Unknown")
-        info["device_type"] = "Desktop"  # safe fallback
+        device_type = "Desktop"
+    
+    info["device_type"] = device_type
     
     # ----- Brand & Model (improved, with fallback) -----
     brand = "Unknown"
@@ -305,7 +368,6 @@ def get_system_info():
                 brand = winreg.QueryValueEx(key, "SystemManufacturer")[0]
                 model = winreg.QueryValueEx(key, "SystemProductName")[0]
             except:
-                # fallback to wmic
                 try:
                     output = subprocess.check_output("wmic csproduct get vendor,name", shell=True, text=True)
                     lines = output.splitlines()
@@ -508,9 +570,10 @@ Métricas:
 def display_system_info(texts):
     info = get_system_info()
     with st.expander(f"{texts['sysinfo_title']}", expanded=True):
+        st.markdown(f'<div class="info-note">{texts["sysinfo_note"]}</div>', unsafe_allow_html=True)
         col1, col2 = st.columns(2)
         with col1:
-            device_label = texts["device_desktop"] if info["device_type"] == "Desktop" else texts["device_laptop"]
+            device_label = texts["device_desktop"] if info["device_type"] == "Desktop" else texts["device_laptop"] if info["device_type"] == "Laptop" else texts["device_unknown"]
             st.markdown(f"**{texts['device_type']}:** {device_label}")
             st.markdown(f"**{texts['brand']}:** {info['brand']}")
             st.markdown(f"**{texts['model']}:** {info['model']}")
