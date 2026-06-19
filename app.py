@@ -57,6 +57,7 @@ TEXTS = {
         "live_note": "Fetching real system metrics using psutil.",
         "sysinfo_title": "🖥️ System Information",
         "device_type": "Device Type",
+        "manufacturer": "Manufacturer",
         "model": "Model",
         "hostname": "Hostname",
         "os": "Operating System",
@@ -106,6 +107,7 @@ TEXTS = {
         "live_note": "Récupération des métriques réelles via psutil.",
         "sysinfo_title": "🖥️ Informations système",
         "device_type": "Type d'appareil",
+        "manufacturer": "Fabricant",
         "model": "Modèle",
         "hostname": "Nom de l'hôte",
         "os": "Système d'exploitation",
@@ -155,6 +157,7 @@ TEXTS = {
         "live_note": "Obteniendo métricas reales usando psutil.",
         "sysinfo_title": "🖥️ Información del sistema",
         "device_type": "Tipo de dispositivo",
+        "manufacturer": "Fabricante",
         "model": "Modelo",
         "hostname": "Nombre del host",
         "os": "Sistema operativo",
@@ -184,9 +187,9 @@ VOICE_MAP = {
 }
 
 EXPLANATION_SCRIPT = {
-    "English": "Welcome to the System Health AI Monitor, built by Gesner Deslandes, Engineer‑in‑Chief at GlobalInternet.py. This software can monitor real‑time system metrics including CPU, memory, disk usage, and network latency. You can choose between Demo mode, which simulates random data, or Live mode, which reads actual metrics from your computer using the psutil library. It automatically detects anomalies and logs alerts. The AI analyst powered by Groq uses Llama 3.1 to provide predictive insights and recommendations. The app also displays detailed system information about your device, including the device type, hostname, operating system, processor, memory, IP addresses, network adapters, and more. You can adjust the refresh rate, enable auto‑refresh, and run AI analysis at any time. The dashboard shows live trends and alerts. This tool is ideal for platform engineers and software architects to demonstrate observability and AI‑assisted operations.",
-    "French": "Bienvenue dans le Moniteur de santé système en temps réel, conçu par Gesner Deslandes, ingénieur en chef chez GlobalInternet.py. Ce logiciel peut surveiller des métriques système en temps réel : CPU, mémoire, disque et latence réseau. Vous pouvez choisir entre le mode Démo, qui simule des données aléatoires, ou le mode Direct, qui lit les métriques réelles de votre ordinateur à l'aide de la bibliothèque psutil. Il détecte automatiquement les anomalies et enregistre des alertes. L'analyste IA, propulsé par Groq, utilise Llama 3.1 pour fournir des analyses prédictives et des recommandations. L'application affiche également des informations détaillées sur votre appareil, notamment le type d'appareil, le nom d'hôte, le système d'exploitation, le processeur, la mémoire, les adresses IP, les adaptateurs réseau, et plus encore. Vous pouvez ajuster la fréquence de rafraîchissement, activer le rafraîchissement automatique et lancer l'analyse IA à tout moment. Le tableau de bord montre les tendances en direct et les alertes. Cet outil est idéal pour les ingénieurs plateforme et les architectes logiciels pour démontrer l'observabilité et les opérations assistées par IA.",
-    "Spanish": "Bienvenido al Monitor de salud del sistema en tiempo real, construido por Gesner Deslandes, ingeniero jefe de GlobalInternet.py. Este software puede monitorear métricas del sistema en tiempo real: CPU, memoria, uso de disco y latencia de red. Puede elegir entre el modo Demo, que simula datos aleatorios, o el modo En vivo, que lee métricas reales de su computadora usando la biblioteca psutil. Detecta automáticamente anomalías y registra alertas. El analista de IA, impulsado por Groq, utiliza Llama 3.1 para proporcionar información predictiva y recomendaciones. La aplicación también muestra información detallada del sistema, incluido el tipo de dispositivo, el nombre del host, el sistema operativo, el procesador, la memoria, las direcciones IP, los adaptadores de red y más. Puede ajustar la frecuencia de actualización, habilitar la actualización automática y ejecutar el análisis de IA en cualquier momento. El tablero muestra tendencias en vivo y alertas. Esta herramienta es ideal para ingenieros de plataforma y arquitectos de software para demostrar observabilidad y operaciones asistidas por IA."
+    "English": "Welcome to the System Health AI Monitor, built by Gesner Deslandes, Engineer‑in‑Chief at GlobalInternet.py. This software can monitor real‑time system metrics including CPU, memory, disk usage, and network latency. You can choose between Demo mode, which simulates random data, or Live mode, which reads actual metrics from your computer using the psutil library. It automatically detects anomalies and logs alerts. The AI analyst powered by Groq uses Llama 3.1 to provide predictive insights and recommendations. The app also displays detailed system information about your device, including the device type, manufacturer, model, hostname, operating system, processor, memory, IP addresses, network adapters, and more. You can adjust the refresh rate, enable auto‑refresh, and run AI analysis at any time. The dashboard shows live trends and alerts. This tool is ideal for platform engineers and software architects to demonstrate observability and AI‑assisted operations.",
+    "French": "Bienvenue dans le Moniteur de santé système en temps réel, conçu par Gesner Deslandes, ingénieur en chef chez GlobalInternet.py. Ce logiciel peut surveiller des métriques système en temps réel : CPU, mémoire, disque et latence réseau. Vous pouvez choisir entre le mode Démo, qui simule des données aléatoires, ou le mode Direct, qui lit les métriques réelles de votre ordinateur à l'aide de la bibliothèque psutil. Il détecte automatiquement les anomalies et enregistre des alertes. L'analyste IA, propulsé par Groq, utilise Llama 3.1 pour fournir des analyses prédictives et des recommandations. L'application affiche également des informations détaillées sur votre appareil, notamment le type d'appareil, le fabricant, le modèle, le nom d'hôte, le système d'exploitation, le processeur, la mémoire, les adresses IP, les adaptateurs réseau, et plus encore. Vous pouvez ajuster la fréquence de rafraîchissement, activer le rafraîchissement automatique et lancer l'analyse IA à tout moment. Le tableau de bord montre les tendances en direct et les alertes. Cet outil est idéal pour les ingénieurs plateforme et les architectes logiciels pour démontrer l'observabilité et les opérations assistées par IA.",
+    "Spanish": "Bienvenido al Monitor de salud del sistema en tiempo real, construido por Gesner Deslandes, ingeniero jefe de GlobalInternet.py. Este software puede monitorear métricas del sistema en tiempo real: CPU, memoria, uso de disco y latencia de red. Puede elegir entre el modo Demo, que simula datos aleatorios, o el modo En vivo, que lee métricas reales de su computadora usando la biblioteca psutil. Detecta automáticamente anomalías y registra alertas. El analista de IA, impulsado por Groq, utiliza Llama 3.1 para proporcionar información predictiva y recomendaciones. La aplicación también muestra información detallada del sistema, incluido el tipo de dispositivo, el fabricante, el modelo, el nombre del host, el sistema operativo, el procesador, la memoria, las direcciones IP, los adaptadores de red y más. Puede ajustar la frecuencia de actualización, habilitar la actualización automática y ejecutar el análisis de IA en cualquier momento. El tablero muestra tendencias en vivo y alertas. Esta herramienta es ideal para ingenieros de plataforma y arquitectos de software para demostrar observabilidad y operaciones asistidas por IA."
 }
 
 # ========== SESSION STATE ==========
@@ -275,34 +278,38 @@ def get_system_info():
         info["memory_percent"] = mem.percent
     except:
         info["memory_total"] = info["memory_available"] = info["memory_used"] = info["memory_percent"] = "N/A"
-    # ---- Device Type Detection ----
+    # ---- Device Type & Manufacturer/Model ----
     try:
         battery = psutil.sensors_battery()
-        if battery is not None:
-            info["device_type"] = "Laptop"
-        else:
-            info["device_type"] = "Desktop"
+        info["device_type"] = "Laptop" if battery is not None else "Desktop"
     except:
         info["device_type"] = "Unknown"
-    # ---- Model (manufacturer/product) ----
     try:
         if platform.system() == "Windows":
             import winreg
             try:
                 key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SYSTEM\CurrentControlSet\Control\SystemInformation")
-                model = winreg.QueryValueEx(key, "SystemProductName")[0]
-                info["model"] = model
+                info["manufacturer"] = winreg.QueryValueEx(key, "SystemManufacturer")[0]
+                info["model"] = winreg.QueryValueEx(key, "SystemProductName")[0]
             except:
+                info["manufacturer"] = platform.uname().system
                 info["model"] = platform.uname().machine
         elif platform.system() == "Linux":
+            try:
+                with open("/sys/class/dmi/id/sys_vendor") as f:
+                    info["manufacturer"] = f.read().strip()
+            except:
+                info["manufacturer"] = "Unknown"
             try:
                 with open("/sys/class/dmi/id/product_name") as f:
                     info["model"] = f.read().strip()
             except:
                 info["model"] = platform.uname().machine
-        else:  # macOS or others
+        else:  # macOS or other
+            info["manufacturer"] = platform.uname().system
             info["model"] = platform.uname().machine
     except:
+        info["manufacturer"] = "N/A"
         info["model"] = "N/A"
     # IP addresses
     ip_list = []
@@ -467,6 +474,7 @@ def display_system_info(texts):
         with col1:
             device_label = texts["device_desktop"] if info["device_type"] == "Desktop" else texts["device_laptop"]
             st.markdown(f"**{texts['device_type']}:** {device_label}")
+            st.markdown(f"**{texts['manufacturer']}:** {info['manufacturer']}")
             st.markdown(f"**{texts['model']}:** {info['model']}")
             st.markdown(f"**{texts['hostname']}:** {info['hostname']}")
             st.markdown(f"**{texts['os']}:** {info['os']}")
