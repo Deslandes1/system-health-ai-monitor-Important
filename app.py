@@ -7,8 +7,7 @@ import asyncio
 import tempfile
 import os
 import psutil
-import subprocess
-import platform
+import socket
 from datetime import datetime
 import plotly.graph_objects as go
 from groq import Groq
@@ -120,10 +119,11 @@ VOICE_MAP = {
     "Spanish": "es-ES-ElviraNeural"
 }
 
+# ========== UPDATED VOICE EXPLANATION SCRIPTS (now include Live mode) ==========
 EXPLANATION_SCRIPT = {
-    "English": "Welcome to the System Health AI Monitor, built by Gesner Deslandes, Engineer‑in‑Chief at GlobalInternet.py. This software simulates real‑time system metrics including CPU, memory, disk usage, and network latency. It automatically detects anomalies and logs alerts. The AI analyst powered by Groq uses Llama 3.1 to provide predictive insights and recommendations. You can adjust the refresh rate, enable auto‑refresh, and run AI analysis at any time. The dashboard shows live trends and alerts. This tool is ideal for platform engineers and software architects to demonstrate observability and AI‑assisted operations.",
-    "French": "Bienvenue dans le Moniteur de santé système en temps réel, conçu par Gesner Deslandes, ingénieur en chef chez GlobalInternet.py. Ce logiciel simule des métriques système en temps réel : CPU, mémoire, disque et latence réseau. Il détecte automatiquement les anomalies et enregistre des alertes. L'analyste IA, propulsé par Groq, utilise Llama 3.1 pour fournir des analyses prédictives et des recommandations. Vous pouvez ajuster la fréquence de rafraîchissement, activer le rafraîchissement automatique et lancer l'analyse IA à tout moment. Le tableau de bord montre les tendances en direct et les alertes. Cet outil est idéal pour les ingénieurs plateforme et les architectes logiciels pour démontrer l'observabilité et les opérations assistées par IA.",
-    "Spanish": "Bienvenido al Monitor de salud del sistema en tiempo real, construido por Gesner Deslandes, ingeniero jefe de GlobalInternet.py. Este software simula métricas del sistema en tiempo real: CPU, memoria, uso de disco y latencia de red. Detecta automáticamente anomalías y registra alertas. El analista de IA, impulsado por Groq, utiliza Llama 3.1 para proporcionar información predictiva y recomendaciones. Puede ajustar la frecuencia de actualización, habilitar la actualización automática y ejecutar el análisis de IA en cualquier momento. El tablero muestra tendencias en vivo y alertas. Esta herramienta es ideal para ingenieros de plataforma y arquitectos de software para demostrar observabilidad y operaciones asistidas por IA."
+    "English": "Welcome to the System Health AI Monitor, built by Gesner Deslandes, Engineer‑in‑Chief at GlobalInternet.py. This software can monitor real‑time system metrics including CPU, memory, disk usage, and network latency. You can choose between Demo mode, which simulates random data, or Live mode, which reads actual metrics from your computer using the psutil library. It automatically detects anomalies and logs alerts. The AI analyst powered by Groq uses Llama 3.1 to provide predictive insights and recommendations. You can adjust the refresh rate, enable auto‑refresh, and run AI analysis at any time. The dashboard shows live trends and alerts. This tool is ideal for platform engineers and software architects to demonstrate observability and AI‑assisted operations.",
+    "French": "Bienvenue dans le Moniteur de santé système en temps réel, conçu par Gesner Deslandes, ingénieur en chef chez GlobalInternet.py. Ce logiciel peut surveiller des métriques système en temps réel : CPU, mémoire, disque et latence réseau. Vous pouvez choisir entre le mode Démo, qui simule des données aléatoires, ou le mode Direct, qui lit les métriques réelles de votre ordinateur à l'aide de la bibliothèque psutil. Il détecte automatiquement les anomalies et enregistre des alertes. L'analyste IA, propulsé par Groq, utilise Llama 3.1 pour fournir des analyses prédictives et des recommandations. Vous pouvez ajuster la fréquence de rafraîchissement, activer le rafraîchissement automatique et lancer l'analyse IA à tout moment. Le tableau de bord montre les tendances en direct et les alertes. Cet outil est idéal pour les ingénieurs plateforme et les architectes logiciels pour démontrer l'observabilité et les opérations assistées par IA.",
+    "Spanish": "Bienvenido al Monitor de salud del sistema en tiempo real, construido por Gesner Deslandes, ingeniero jefe de GlobalInternet.py. Este software puede monitorear métricas del sistema en tiempo real: CPU, memoria, uso de disco y latencia de red. Puede elegir entre el modo Demo, que simula datos aleatorios, o el modo En vivo, que lee métricas reales de su computadora usando la biblioteca psutil. Detecta automáticamente anomalías y registra alertas. El analista de IA, impulsado por Groq, utiliza Llama 3.1 para proporcionar información predictiva y recomendaciones. Puede ajustar la frecuencia de actualización, habilitar la actualización automática y ejecutar el análisis de IA en cualquier momento. El tablero muestra tendencias en vivo y alertas. Esta herramienta es ideal para ingenieros de plataforma y arquitectos de software para demostrar observabilidad y operaciones asistidas por IA."
 }
 
 # ========== SESSION STATE ==========
@@ -138,7 +138,7 @@ if "auto_refresh" not in st.session_state:
 if "lang" not in st.session_state:
     st.session_state.lang = "English"
 if "monitor_mode" not in st.session_state:
-    st.session_state.monitor_mode = "Demo (Simulated)"  # or "Live (Real System)"
+    st.session_state.monitor_mode = "Demo (Simulated)"
 
 # ========== CUSTOM CSS (LIGHT BLUE THEME) ==========
 st.markdown("""
@@ -183,7 +183,7 @@ def generate_voice(lang, text):
         st.error(f"{TEXTS[lang]['explain_error']} {e}")
         return None
 
-# ========== SIMULATE METRICS (Demo mode) ==========
+# ========== METRICS GENERATION ==========
 def generate_simulated_metrics():
     cpu = random.uniform(5, 95)
     memory = random.uniform(20, 90)
@@ -199,21 +199,17 @@ def generate_simulated_metrics():
         "latency": round(latency, 1)
     }
 
-# ========== LIVE METRICS (Real system using psutil) ==========
 def get_live_metrics():
     cpu = psutil.cpu_percent(interval=0.5)
     memory = psutil.virtual_memory().percent
     disk = psutil.disk_usage('/').percent
-    # Network latency: try to ping google.com or use a simple HTTP request
     try:
-        import socket
-        import time
         start = time.time()
         socket.create_connection(("8.8.8.8", 53), timeout=2)
         end = time.time()
-        latency = round((end - start) * 1000, 1)  # in ms
+        latency = round((end - start) * 1000, 1)
     except Exception:
-        latency = random.uniform(10, 100)  # fallback
+        latency = random.uniform(10, 100)
     return {
         "cpu": round(cpu, 1),
         "memory": round(memory, 1),
@@ -224,7 +220,7 @@ def get_live_metrics():
 def generate_metrics(mode):
     if mode == "Live (Real System)":
         return get_live_metrics()
-    else:  # Demo mode
+    else:
         return generate_simulated_metrics()
 
 def add_metric():
