@@ -58,7 +58,7 @@ TEXTS = {
         "mode_live": "Live (Real System)",
         "live_note": "Fetching real system metrics using psutil.",
         "sysinfo_title": "🖥️ System Information",
-        "sysinfo_note": "ℹ️ This information reflects the server hosting this application, not your local device.",
+        "sysinfo_note": "ℹ️ This information shows the server hosting this app. To see your local device, clone and run this app on your own computer. (See sidebar for instructions.)",
         "device_type": "Device Type",
         "brand": "Brand",
         "model": "Model",
@@ -79,7 +79,8 @@ TEXTS = {
         "not_available": "Not available",
         "device_desktop": "Desktop",
         "device_laptop": "Laptop",
-        "device_unknown": "Unknown"
+        "device_unknown": "Unknown",
+        "local_instruction": "To monitor your own laptop, run the app locally:\n`git clone https://github.com/Deslandes1/system-health-ai-monitor-Important && cd system-health-ai-monitor-Important && pip install -r requirements.txt && streamlit run app.py`"
     },
     "French": {
         "title": "📈 Moniteur de santé système en temps réel",
@@ -110,7 +111,7 @@ TEXTS = {
         "mode_live": "Direct (système réel)",
         "live_note": "Récupération des métriques réelles via psutil.",
         "sysinfo_title": "🖥️ Informations système",
-        "sysinfo_note": "ℹ️ Ces informations reflètent le serveur hébergeant cette application, pas votre appareil local.",
+        "sysinfo_note": "ℹ️ Ces informations reflètent le serveur hébergeant cette appli. Pour voir votre appareil local, clonez et exécutez cette appli sur votre propre ordinateur. (Voir la barre latérale.)",
         "device_type": "Type d'appareil",
         "brand": "Marque",
         "model": "Modèle",
@@ -131,7 +132,8 @@ TEXTS = {
         "not_available": "Non disponible",
         "device_desktop": "Ordinateur de bureau",
         "device_laptop": "Ordinateur portable",
-        "device_unknown": "Inconnu"
+        "device_unknown": "Inconnu",
+        "local_instruction": "Pour surveiller votre propre ordinateur, exécutez l'appli localement :\n`git clone https://github.com/Deslandes1/system-health-ai-monitor-Important && cd system-health-ai-monitor-Important && pip install -r requirements.txt && streamlit run app.py`"
     },
     "Spanish": {
         "title": "📈 Monitor de salud del sistema en tiempo real",
@@ -162,7 +164,7 @@ TEXTS = {
         "mode_live": "En vivo (sistema real)",
         "live_note": "Obteniendo métricas reales usando psutil.",
         "sysinfo_title": "🖥️ Información del sistema",
-        "sysinfo_note": "ℹ️ Esta información refleja el servidor que aloja esta aplicación, no su dispositivo local.",
+        "sysinfo_note": "ℹ️ Esta información refleja el servidor que aloja esta app. Para ver su dispositivo local, clone y ejecute esta app en su propia computadora. (Vea la barra lateral.)",
         "device_type": "Tipo de dispositivo",
         "brand": "Marca",
         "model": "Modelo",
@@ -183,7 +185,8 @@ TEXTS = {
         "not_available": "No disponible",
         "device_desktop": "Escritorio",
         "device_laptop": "Portátil",
-        "device_unknown": "Desconocido"
+        "device_unknown": "Desconocido",
+        "local_instruction": "Para monitorear su propia computadora, ejecute la app localmente:\n`git clone https://github.com/Deslandes1/system-health-ai-monitor-Important && cd system-health-ai-monitor-Important && pip install -r requirements.txt && streamlit run app.py`"
     }
 }
 
@@ -227,6 +230,7 @@ st.markdown("""
     .stMetric { background-color: white; border-radius: 12px; padding: 0.5rem; }
     .profile-img { border-radius: 50%; border: 2px solid #2c7be5; }
     .info-note { background-color: #e6f4ff; border-left: 3px solid #2c7be5; padding: 8px 12px; border-radius: 4px; margin-bottom: 10px; font-size: 0.9rem; }
+    .local-instructions { background-color: #f0f8ff; border: 1px solid #2c7be5; border-radius: 8px; padding: 10px; margin-top: 10px; font-family: monospace; font-size: 0.85rem; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -306,13 +310,11 @@ def get_system_info():
                 try:
                     with open("/sys/class/dmi/id/chassis_type") as f:
                         chassis = f.read().strip()
-                        # Common chassis types: 10 = Notebook, 11 = Handheld, 14 = Sub-notebook, 30 = Tablet
                         if chassis in ["10", "11", "14", "30"]:
                             device_type = "Laptop"
                         else:
                             device_type = "Desktop"
                 except:
-                    # Fallback: check model name for keywords
                     try:
                         with open("/sys/class/dmi/id/product_name") as f:
                             model = f.read().strip().lower()
@@ -321,20 +323,17 @@ def get_system_info():
                             else:
                                 device_type = "Desktop"
                     except:
-                        device_type = "Desktop"  # default
+                        device_type = "Desktop"
             elif platform.system() == "Windows":
-                # Try to read chassis type from registry (or fallback)
                 try:
                     import winreg
                     key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SYSTEM\CurrentControlSet\Control\SystemInformation")
                     chassis = winreg.QueryValueEx(key, "SystemChassisType")[0]
-                    # Chassis types: 1=Desktop, 2=Laptop, etc. (simplified)
                     if chassis in [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50]:
                         device_type = "Laptop"
                     else:
                         device_type = "Desktop"
                 except:
-                    # fallback to model
                     try:
                         key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SYSTEM\CurrentControlSet\Control\SystemInformation")
                         model = winreg.QueryValueEx(key, "SystemProductName")[0].lower()
@@ -344,14 +343,13 @@ def get_system_info():
                             device_type = "Desktop"
                     except:
                         device_type = "Desktop"
-            elif platform.system() == "Darwin":  # macOS
-                # All Macs with a battery are laptops
+            elif platform.system() == "Darwin":
                 if battery is not None:
                     device_type = "Laptop"
                 else:
                     device_type = "Desktop"
             else:
-                device_type = "Desktop"  # default for unknown
+                device_type = "Desktop"
     except Exception:
         device_type = "Desktop"
     
@@ -388,7 +386,7 @@ def get_system_info():
                     model = f.read().strip()
             except:
                 pass
-        elif platform.system() == "Darwin":  # macOS
+        elif platform.system() == "Darwin":
             try:
                 output = subprocess.check_output(["system_profiler", "SPHardwareDataType"], text=True)
                 for line in output.splitlines():
@@ -639,6 +637,13 @@ with st.sidebar:
         st.session_state.lang = lang
         st.rerun()
     texts = TEXTS[st.session_state.lang]
+    
+    st.markdown("---")
+    # --- Local instructions ---
+    with st.expander("🖥️ Run locally to see your device", expanded=False):
+        st.markdown("Clone and run this app on your own machine to monitor your local hardware.")
+        st.code(texts["local_instruction"], language="bash")
+        st.caption("Requires Python 3.8+ and Git.")
     
     st.markdown("---")
     mode_options = ["Demo (Simulated)", "Live (Real System)"]
