@@ -46,7 +46,8 @@ TEXTS = {
         "refresh_rate": "Refresh rate (seconds)",
         "auto_refresh": "Auto-refresh",
         "refresh_now": "🔄 Refresh Now",
-        "security_badge": "🔐 Secure channel active",
+        "security_badge": "🛡️ Global Shield: {status}",
+        "security_badge_default": "🔐 Secure channel active",
         "security_caption": "End-to-end encryption",
         "explain_btn": "🎙️ AI Voice Explanation",
         "explain_playing": "Playing explanation...",
@@ -122,7 +123,8 @@ TEXTS = {
         "refresh_rate": "Fréquence de rafraîchissement (secondes)",
         "auto_refresh": "Rafraîchissement auto",
         "refresh_now": "🔄 Rafraîchir maintenant",
-        "security_badge": "🔐 Canal sécurisé actif",
+        "security_badge": "🛡️ Bouclier global : {status}",
+        "security_badge_default": "🔐 Canal sécurisé actif",
         "security_caption": "Chiffrement de bout en bout",
         "explain_btn": "🎙️ Explication vocale IA",
         "explain_playing": "Lecture de l'explication...",
@@ -198,7 +200,8 @@ TEXTS = {
         "refresh_rate": "Frecuencia de actualización (segundos)",
         "auto_refresh": "Actualización automática",
         "refresh_now": "🔄 Actualizar ahora",
-        "security_badge": "🔐 Canal seguro activo",
+        "security_badge": "🛡️ Escudo global: {status}",
+        "security_badge_default": "🔐 Canal seguro activo",
         "security_caption": "Cifrado de extremo a extremo",
         "explain_btn": "🎙️ Explicación por voz IA",
         "explain_playing": "Reproduciendo explicación...",
@@ -292,6 +295,8 @@ st.markdown("""
     .stApp { background-color: #e6f4ff; color: #1a2a3a; }
     [data-testid="stSidebar"] { background-color: #b8d9ff; border-right: 1px solid #7bb3e0; }
     .security-badge { background-color: #d9ebff; border: 1px solid #2c7be5; border-radius: 30px; padding: 8px 15px; text-align: center; color: #0a4c8c; font-weight: bold; font-family: monospace; }
+    .security-badge.active { background-color: #d4edda; border-color: #28a745; color: #155724; }
+    .security-badge.inactive { background-color: #f8d7da; border-color: #dc3545; color: #721c24; }
     h1, h2, h3, h4, h5, h6 { color: #0a4c8c; }
     p, li, .stMarkdown { color: #1a2a3a; }
     .stButton>button { background-color: #2c7be5; color: white; border-radius: 25px; }
@@ -758,8 +763,18 @@ with st.sidebar:
         st.info(texts["live_note"])
     
     st.markdown("---")
-    st.markdown("### 🛡️ Global Security Shield")
-    st.markdown(f'<div class="security-badge">{texts["security_badge"]}<br>{texts["security_caption"]}</div>', unsafe_allow_html=True)
+    # --- Global Shield Status ---
+    shield_key = st.secrets.get("GLOBAL_SHIELD_API_KEY")
+    if shield_key:
+        # Simple presence check – you could call an external API here
+        status = "✅ Active"
+        badge_class = "active"
+    else:
+        status = "❌ Not configured"
+        badge_class = "inactive"
+    badge_text = texts["security_badge"].format(status=status)
+    st.markdown(f'<div class="security-badge {badge_class}">{badge_text}</div>', unsafe_allow_html=True)
+    st.caption(texts["security_caption"])
     st.markdown("---")
     st.markdown("**Built by Gesner Deslandes**  \nEngineer‑in‑Chief, GlobalInternet.py")
     st.markdown("📞 (509) 4738 5663")
