@@ -9,11 +9,9 @@ import os
 import psutil
 import socket
 import platform
-import uuid
 import netifaces
 import urllib.request
 import json
-import re
 from datetime import datetime
 import plotly.graph_objects as go
 from groq import Groq
@@ -59,6 +57,7 @@ TEXTS = {
         "live_note": "Fetching real system metrics using psutil.",
         "sysinfo_title": "🖥️ System Information",
         "device_type": "Device Type",
+        "model": "Model",
         "hostname": "Hostname",
         "os": "Operating System",
         "processor": "Processor",
@@ -75,7 +74,7 @@ TEXTS = {
         "dns_servers": "DNS Servers",
         "not_available": "Not available",
         "device_desktop": "Desktop",
-        "device_laptop": "Laptop / Tablet / Phone"
+        "device_laptop": "Laptop"
     },
     "French": {
         "title": "📈 Moniteur de santé système en temps réel",
@@ -107,6 +106,7 @@ TEXTS = {
         "live_note": "Récupération des métriques réelles via psutil.",
         "sysinfo_title": "🖥️ Informations système",
         "device_type": "Type d'appareil",
+        "model": "Modèle",
         "hostname": "Nom de l'hôte",
         "os": "Système d'exploitation",
         "processor": "Processeur",
@@ -123,7 +123,7 @@ TEXTS = {
         "dns_servers": "Serveurs DNS",
         "not_available": "Non disponible",
         "device_desktop": "Ordinateur de bureau",
-        "device_laptop": "Ordinateur portable / Tablette / Téléphone"
+        "device_laptop": "Ordinateur portable"
     },
     "Spanish": {
         "title": "📈 Monitor de salud del sistema en tiempo real",
@@ -155,6 +155,7 @@ TEXTS = {
         "live_note": "Obteniendo métricas reales usando psutil.",
         "sysinfo_title": "🖥️ Información del sistema",
         "device_type": "Tipo de dispositivo",
+        "model": "Modelo",
         "hostname": "Nombre del host",
         "os": "Sistema operativo",
         "processor": "Procesador",
@@ -171,7 +172,7 @@ TEXTS = {
         "dns_servers": "Servidores DNS",
         "not_available": "No disponible",
         "device_desktop": "Escritorio",
-        "device_laptop": "Portátil / Tableta / Teléfono"
+        "device_laptop": "Portátil"
     }
 }
 
@@ -182,7 +183,6 @@ VOICE_MAP = {
     "Spanish": "es-ES-ElviraNeural"
 }
 
-# ========== UPDATED VOICE EXPLANATION (includes device type) ==========
 EXPLANATION_SCRIPT = {
     "English": "Welcome to the System Health AI Monitor, built by Gesner Deslandes, Engineer‑in‑Chief at GlobalInternet.py. This software can monitor real‑time system metrics including CPU, memory, disk usage, and network latency. You can choose between Demo mode, which simulates random data, or Live mode, which reads actual metrics from your computer using the psutil library. It automatically detects anomalies and logs alerts. The AI analyst powered by Groq uses Llama 3.1 to provide predictive insights and recommendations. The app also displays detailed system information about your device, including the device type, hostname, operating system, processor, memory, IP addresses, network adapters, and more. You can adjust the refresh rate, enable auto‑refresh, and run AI analysis at any time. The dashboard shows live trends and alerts. This tool is ideal for platform engineers and software architects to demonstrate observability and AI‑assisted operations.",
     "French": "Bienvenue dans le Moniteur de santé système en temps réel, conçu par Gesner Deslandes, ingénieur en chef chez GlobalInternet.py. Ce logiciel peut surveiller des métriques système en temps réel : CPU, mémoire, disque et latence réseau. Vous pouvez choisir entre le mode Démo, qui simule des données aléatoires, ou le mode Direct, qui lit les métriques réelles de votre ordinateur à l'aide de la bibliothèque psutil. Il détecte automatiquement les anomalies et enregistre des alertes. L'analyste IA, propulsé par Groq, utilise Llama 3.1 pour fournir des analyses prédictives et des recommandations. L'application affiche également des informations détaillées sur votre appareil, notamment le type d'appareil, le nom d'hôte, le système d'exploitation, le processeur, la mémoire, les adresses IP, les adaptateurs réseau, et plus encore. Vous pouvez ajuster la fréquence de rafraîchissement, activer le rafraîchissement automatique et lancer l'analyse IA à tout moment. Le tableau de bord montre les tendances en direct et les alertes. Cet outil est idéal pour les ingénieurs plateforme et les architectes logiciels pour démontrer l'observabilité et les opérations assistées par IA.",
@@ -215,8 +215,6 @@ st.markdown("""
     .stButton>button:hover { background-color: #1a5bbf; }
     .stMetric { background-color: white; border-radius: 12px; padding: 0.5rem; }
     .profile-img { border-radius: 50%; border: 2px solid #2c7be5; }
-    .sysinfo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .sysinfo-item { background: white; padding: 10px; border-radius: 8px; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -226,7 +224,7 @@ if "GROQ_API_KEY" not in st.secrets:
     st.stop()
 groq_client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
-# ========== HELPER: GENERATE VOICE ==========
+# ========== VOICE GENERATION ==========
 def generate_voice(lang, text):
     voice = VOICE_MAP.get(lang, "en-US-JennyNeural")
     try:
@@ -248,7 +246,7 @@ def generate_voice(lang, text):
         st.error(f"{TEXTS[lang]['explain_error']} {e}")
         return None
 
-# ========== SYSTEM INFORMATION COLLECTOR (with device type) ==========
+# ========== SYSTEM INFORMATION ==========
 def get_system_info():
     info = {}
     try:
@@ -278,15 +276,34 @@ def get_system_info():
     except:
         info["memory_total"] = info["memory_available"] = info["memory_used"] = info["memory_percent"] = "N/A"
     # ---- Device Type Detection ----
-    # Check if battery exists -> likely laptop/tablet/phone, else desktop
     try:
         battery = psutil.sensors_battery()
         if battery is not None:
-            info["device_type"] = "Laptop / Tablet / Phone"
+            info["device_type"] = "Laptop"
         else:
             info["device_type"] = "Desktop"
     except:
         info["device_type"] = "Unknown"
+    # ---- Model (manufacturer/product) ----
+    try:
+        if platform.system() == "Windows":
+            import winreg
+            try:
+                key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SYSTEM\CurrentControlSet\Control\SystemInformation")
+                model = winreg.QueryValueEx(key, "SystemProductName")[0]
+                info["model"] = model
+            except:
+                info["model"] = platform.uname().machine
+        elif platform.system() == "Linux":
+            try:
+                with open("/sys/class/dmi/id/product_name") as f:
+                    info["model"] = f.read().strip()
+            except:
+                info["model"] = platform.uname().machine
+        else:  # macOS or others
+            info["model"] = platform.uname().machine
+    except:
+        info["model"] = "N/A"
     # IP addresses
     ip_list = []
     mac_list = []
@@ -298,7 +315,6 @@ def get_system_info():
                     ip_list.append((iface, addr.address))
                 elif addr.family == psutil.AF_LINK:
                     mac_list.append((iface, addr.address))
-            # adapter speed and status
             stats = psutil.net_if_stats().get(iface)
             if stats:
                 adapter_info[iface] = {"speed": stats.speed, "isup": stats.isup}
@@ -307,20 +323,19 @@ def get_system_info():
     info["ip_addresses"] = ip_list
     info["mac_addresses"] = mac_list
     info["network_adapters"] = adapter_info
-    # Default gateway
+    # Gateway
     try:
         gateway = netifaces.gateways()['default'][netifaces.AF_INET][0]
         info["default_gateway"] = gateway
     except:
         info["default_gateway"] = "N/A"
-    # DNS servers (simple attempt)
+    # DNS
     dns = []
     try:
         if platform.system() == "Windows":
             import subprocess
             output = subprocess.check_output("ipconfig /all", shell=True, text=True)
-            lines = output.splitlines()
-            for line in lines:
+            for line in output.splitlines():
                 if "DNS Servers" in line:
                     parts = line.split(":")
                     if len(parts) > 1:
@@ -347,7 +362,7 @@ def get_system_info():
             info["public_ip"] = "N/A"
     return info
 
-# ========== METRICS GENERATION ==========
+# ========== METRICS ==========
 def generate_simulated_metrics():
     cpu = random.uniform(5, 95)
     memory = random.uniform(20, 90)
@@ -444,15 +459,15 @@ Métricas:
     except Exception as e:
         return f"{TEXTS[lang]['ai_unavailable']}: {e}"
 
-# ========== DISPLAY SYSTEM INFORMATION ==========
+# ========== DISPLAY SYSTEM INFO ==========
 def display_system_info(texts):
     info = get_system_info()
     with st.expander(f"{texts['sysinfo_title']}", expanded=True):
         col1, col2 = st.columns(2)
         with col1:
-            # Device Type
             device_label = texts["device_desktop"] if info["device_type"] == "Desktop" else texts["device_laptop"]
             st.markdown(f"**{texts['device_type']}:** {device_label}")
+            st.markdown(f"**{texts['model']}:** {info['model']}")
             st.markdown(f"**{texts['hostname']}:** {info['hostname']}")
             st.markdown(f"**{texts['os']}:** {info['os']}")
             st.markdown(f"**{texts['processor']}:** {info['processor']}")
@@ -476,7 +491,6 @@ def display_system_info(texts):
             st.markdown(f"**{texts['memory_used']}:** {mem_used}")
             st.markdown(f"**{texts['memory_percent']}:** {mem_percent}%")
             st.markdown(f"**{texts['public_ip']}:** {info['public_ip']}")
-        # IP and MAC addresses
         st.markdown("---")
         st.markdown(f"**{texts['ip_addresses']}:**")
         if info['ip_addresses']:
@@ -555,15 +569,13 @@ with st.sidebar:
         add_metric()
         st.rerun()
 
-# ========== MAIN DASHBOARD ==========
+# ========== MAIN PAGE ==========
 texts = TEXTS[st.session_state.lang]
 st.title(texts["title"])
 st.caption(texts["caption"])
 
-# ---- Display System Information ----
 display_system_info(texts)
 
-# ---- Metrics Dashboard ----
 if not st.session_state.history:
     for _ in range(20):
         add_metric()
