@@ -99,14 +99,12 @@ TEXTS = {
 }
 
 # ========== VOICE MAPPING ==========
-# Female voices for each language
 VOICE_MAP = {
     "English": "en-US-JennyNeural",
     "French": "fr-FR-DeniseNeural",
     "Spanish": "es-ES-ElviraNeural"
 }
 
-# Script for voice explanation (will be translated on the fly)
 EXPLANATION_SCRIPT = {
     "English": "Welcome to the System Health AI Monitor, built by Gesner Deslandes, Engineer‑in‑Chief at GlobalInternet.py. This software simulates real‑time system metrics including CPU, memory, disk usage, and network latency. It automatically detects anomalies and logs alerts. The AI analyst powered by Groq uses Llama 3.1 to provide predictive insights and recommendations. You can adjust the refresh rate, enable auto‑refresh, and run AI analysis at any time. The dashboard shows live trends and alerts. This tool is ideal for platform engineers and software architects to demonstrate observability and AI‑assisted operations.",
     "French": "Bienvenue dans le Moniteur de santé système en temps réel, conçu par Gesner Deslandes, ingénieur en chef chez GlobalInternet.py. Ce logiciel simule des métriques système en temps réel : CPU, mémoire, disque et latence réseau. Il détecte automatiquement les anomalies et enregistre des alertes. L'analyste IA, propulsé par Groq, utilise Llama 3.1 pour fournir des analyses prédictives et des recommandations. Vous pouvez ajuster la fréquence de rafraîchissement, activer le rafraîchissement automatique et lancer l'analyse IA à tout moment. Le tableau de bord montre les tendances en direct et les alertes. Cet outil est idéal pour les ingénieurs plateforme et les architectes logiciels pour démontrer l'observabilité et les opérations assistées par IA.",
@@ -136,6 +134,7 @@ st.markdown("""
     .stButton>button { background-color: #2c7be5; color: white; border-radius: 25px; }
     .stButton>button:hover { background-color: #1a5bbf; }
     .stMetric { background-color: white; border-radius: 12px; padding: 0.5rem; }
+    .profile-img { border-radius: 50%; border: 2px solid #2c7be5; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -147,10 +146,8 @@ groq_client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
 # ========== HELPER: GENERATE VOICE (ASYNC) ==========
 def generate_voice(lang, text):
-    """Generate TTS audio using edge-tts (female voice for language) and return audio bytes."""
     voice = VOICE_MAP.get(lang, "en-US-JennyNeural")
     try:
-        # Use asyncio run
         async def _tts():
             comm = edge_tts.Communicate(text, voice)
             with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp:
@@ -243,6 +240,16 @@ Métricas:
 
 # ========== SIDEBAR ==========
 with st.sidebar:
+    # ---- PROFILE PICTURE AND NAME ----
+    st.image(
+        "https://raw.githubusercontent.com/Deslandes1/system-health-ai-monitor-Important/main/Gesner%20Deslandes.png",
+        width=80,
+        use_container_width=False,
+        output_format="PNG"
+    )
+    st.markdown("### **Gesner Deslandes**")
+    
+    st.markdown("---")
     st.title("📊 System Health AI")
     lang = st.selectbox("🌐 Language", ["English", "French", "Spanish"], key="lang_selector")
     if lang != st.session_state.lang:
