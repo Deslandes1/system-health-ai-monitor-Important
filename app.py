@@ -251,30 +251,52 @@ def generate_voice(lang, text):
         st.error(f"{TEXTS[lang]['explain_error']} {e}")
         return None
 
-# ========== SYSTEM INFORMATION (Enhanced Brand/Model) ==========
+# ========== SYSTEM INFORMATION ==========
 def get_system_info():
     info = {}
-    # Basic info
-    info["hostname"] = socket.gethostname()
-    info["os"] = f"{platform.system()} {platform.release()} ({platform.version()})"
-    info["processor"] = platform.processor() or "Unknown"
-    info["cores"] = psutil.cpu_count(logical=True)
-
-    # Memory
-    mem = psutil.virtual_memory()
-    info["memory_total"] = mem.total
-    info["memory_available"] = mem.available
-    info["memory_used"] = mem.used
-    info["memory_percent"] = mem.percent
-
-    # Device type (Laptop/Desktop)
-    battery = psutil.sensors_battery()
-    info["device_type"] = "Laptop" if battery is not None else "Desktop"
-
-    # Brand & Model detection (improved)
+    
+    # ----- Basic info (safe) -----
+    try:
+        info["hostname"] = socket.gethostname()
+    except:
+        info["hostname"] = "Unknown"
+    
+    try:
+        info["os"] = f"{platform.system()} {platform.release()} ({platform.version()})"
+    except:
+        info["os"] = "Unknown"
+    
+    try:
+        info["processor"] = platform.processor() or "Unknown"
+    except:
+        info["processor"] = "Unknown"
+    
+    try:
+        info["cores"] = psutil.cpu_count(logical=True) or "Unknown"
+    except:
+        info["cores"] = "Unknown"
+    
+    # ----- Memory (safe) -----
+    try:
+        mem = psutil.virtual_memory()
+        info["memory_total"] = mem.total
+        info["memory_available"] = mem.available
+        info["memory_used"] = mem.used
+        info["memory_percent"] = mem.percent
+    except:
+        info["memory_total"] = info["memory_available"] = info["memory_used"] = info["memory_percent"] = "N/A"
+    
+    # ----- Device type (Laptop/Desktop) – with try/except -----
+    try:
+        battery = psutil.sensors_battery()
+        info["device_type"] = "Laptop" if battery is not None else "Desktop"
+    except Exception:
+        # If battery info is unavailable, assume Desktop (or "Unknown")
+        info["device_type"] = "Desktop"  # safe fallback
+    
+    # ----- Brand & Model (improved, with fallback) -----
     brand = "Unknown"
     model = "Unknown"
-
     try:
         if platform.system() == "Windows":
             import winreg
@@ -283,7 +305,7 @@ def get_system_info():
                 brand = winreg.QueryValueEx(key, "SystemManufacturer")[0]
                 model = winreg.QueryValueEx(key, "SystemProductName")[0]
             except:
-                # fallback: use wmic if available
+                # fallback to wmic
                 try:
                     output = subprocess.check_output("wmic csproduct get vendor,name", shell=True, text=True)
                     lines = output.splitlines()
@@ -313,25 +335,18 @@ def get_system_info():
                         model = line.split(":")[1].strip()
                         break
                 if model == "Unknown":
-                    # fallback to platform
                     brand = "Apple"
                     model = platform.uname().machine
             except:
                 brand = "Apple"
                 model = platform.uname().machine
-    except:
+    except Exception:
         pass
-
-    # Fallback if still unknown
-    if brand == "" or brand is None:
-        brand = "Unknown"
-    if model == "" or model is None:
-        model = "Unknown"
-
-    info["brand"] = brand
-    info["model"] = model
-
-    # IP addresses
+    
+    info["brand"] = brand if brand else "Unknown"
+    info["model"] = model if model else "Unknown"
+    
+    # ----- IP & MAC addresses (safe) -----
     ip_list = []
     mac_list = []
     adapter_info = {}
@@ -350,15 +365,15 @@ def get_system_info():
     info["ip_addresses"] = ip_list
     info["mac_addresses"] = mac_list
     info["network_adapters"] = adapter_info
-
-    # Gateway
+    
+    # ----- Default Gateway -----
     try:
         gateway = netifaces.gateways()['default'][netifaces.AF_INET][0]
         info["default_gateway"] = gateway
     except:
         info["default_gateway"] = "Not available"
-
-    # DNS
+    
+    # ----- DNS -----
     dns = []
     try:
         if platform.system() == "Windows":
@@ -376,8 +391,8 @@ def get_system_info():
     except:
         pass
     info["dns_servers"] = dns if dns else ["Not available"]
-
-    # Public IP
+    
+    # ----- Public IP -----
     try:
         with urllib.request.urlopen("https://api.ipify.org?format=json", timeout=3) as response:
             data = json.loads(response.read().decode())
@@ -389,7 +404,7 @@ def get_system_info():
                 info["public_ip"] = data.get("origin", "Not available")
         except:
             info["public_ip"] = "Not available"
-
+    
     return info
 
 # ========== METRICS ==========
