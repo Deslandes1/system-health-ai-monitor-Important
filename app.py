@@ -12,6 +12,8 @@ import platform
 import netifaces
 import urllib.request
 import json
+import subprocess
+import re
 from datetime import datetime
 import plotly.graph_objects as go
 from groq import Groq
@@ -57,7 +59,7 @@ TEXTS = {
         "live_note": "Fetching real system metrics using psutil.",
         "sysinfo_title": "🖥️ System Information",
         "device_type": "Device Type",
-        "manufacturer": "Manufacturer",
+        "brand": "Brand",
         "model": "Model",
         "hostname": "Hostname",
         "os": "Operating System",
@@ -107,7 +109,7 @@ TEXTS = {
         "live_note": "Récupération des métriques réelles via psutil.",
         "sysinfo_title": "🖥️ Informations système",
         "device_type": "Type d'appareil",
-        "manufacturer": "Fabricant",
+        "brand": "Marque",
         "model": "Modèle",
         "hostname": "Nom de l'hôte",
         "os": "Système d'exploitation",
@@ -157,7 +159,7 @@ TEXTS = {
         "live_note": "Obteniendo métricas reales usando psutil.",
         "sysinfo_title": "🖥️ Información del sistema",
         "device_type": "Tipo de dispositivo",
-        "manufacturer": "Fabricante",
+        "brand": "Marca",
         "model": "Modelo",
         "hostname": "Nombre del host",
         "os": "Sistema operativo",
@@ -187,9 +189,9 @@ VOICE_MAP = {
 }
 
 EXPLANATION_SCRIPT = {
-    "English": "Welcome to the System Health AI Monitor, built by Gesner Deslandes, Engineer‑in‑Chief at GlobalInternet.py. This software can monitor real‑time system metrics including CPU, memory, disk usage, and network latency. You can choose between Demo mode, which simulates random data, or Live mode, which reads actual metrics from your computer using the psutil library. It automatically detects anomalies and logs alerts. The AI analyst powered by Groq uses Llama 3.1 to provide predictive insights and recommendations. The app also displays detailed system information about your device, including the device type, manufacturer, model, hostname, operating system, processor, memory, IP addresses, network adapters, and more. You can adjust the refresh rate, enable auto‑refresh, and run AI analysis at any time. The dashboard shows live trends and alerts. This tool is ideal for platform engineers and software architects to demonstrate observability and AI‑assisted operations.",
-    "French": "Bienvenue dans le Moniteur de santé système en temps réel, conçu par Gesner Deslandes, ingénieur en chef chez GlobalInternet.py. Ce logiciel peut surveiller des métriques système en temps réel : CPU, mémoire, disque et latence réseau. Vous pouvez choisir entre le mode Démo, qui simule des données aléatoires, ou le mode Direct, qui lit les métriques réelles de votre ordinateur à l'aide de la bibliothèque psutil. Il détecte automatiquement les anomalies et enregistre des alertes. L'analyste IA, propulsé par Groq, utilise Llama 3.1 pour fournir des analyses prédictives et des recommandations. L'application affiche également des informations détaillées sur votre appareil, notamment le type d'appareil, le fabricant, le modèle, le nom d'hôte, le système d'exploitation, le processeur, la mémoire, les adresses IP, les adaptateurs réseau, et plus encore. Vous pouvez ajuster la fréquence de rafraîchissement, activer le rafraîchissement automatique et lancer l'analyse IA à tout moment. Le tableau de bord montre les tendances en direct et les alertes. Cet outil est idéal pour les ingénieurs plateforme et les architectes logiciels pour démontrer l'observabilité et les opérations assistées par IA.",
-    "Spanish": "Bienvenido al Monitor de salud del sistema en tiempo real, construido por Gesner Deslandes, ingeniero jefe de GlobalInternet.py. Este software puede monitorear métricas del sistema en tiempo real: CPU, memoria, uso de disco y latencia de red. Puede elegir entre el modo Demo, que simula datos aleatorios, o el modo En vivo, que lee métricas reales de su computadora usando la biblioteca psutil. Detecta automáticamente anomalías y registra alertas. El analista de IA, impulsado por Groq, utiliza Llama 3.1 para proporcionar información predictiva y recomendaciones. La aplicación también muestra información detallada del sistema, incluido el tipo de dispositivo, el fabricante, el modelo, el nombre del host, el sistema operativo, el procesador, la memoria, las direcciones IP, los adaptadores de red y más. Puede ajustar la frecuencia de actualización, habilitar la actualización automática y ejecutar el análisis de IA en cualquier momento. El tablero muestra tendencias en vivo y alertas. Esta herramienta es ideal para ingenieros de plataforma y arquitectos de software para demostrar observabilidad y operaciones asistidas por IA."
+    "English": "Welcome to the System Health AI Monitor, built by Gesner Deslandes, Engineer‑in‑Chief at GlobalInternet.py. This software can monitor real‑time system metrics including CPU, memory, disk usage, and network latency. You can choose between Demo mode, which simulates random data, or Live mode, which reads actual metrics from your computer using the psutil library. It automatically detects anomalies and logs alerts. The AI analyst powered by Groq uses Llama 3.1 to provide predictive insights and recommendations. The app also displays detailed system information about your device, including the device type, brand, model, hostname, operating system, processor, memory, IP addresses, network adapters, and more. You can adjust the refresh rate, enable auto‑refresh, and run AI analysis at any time. The dashboard shows live trends and alerts. This tool is ideal for platform engineers and software architects to demonstrate observability and AI‑assisted operations.",
+    "French": "Bienvenue dans le Moniteur de santé système en temps réel, conçu par Gesner Deslandes, ingénieur en chef chez GlobalInternet.py. Ce logiciel peut surveiller des métriques système en temps réel : CPU, mémoire, disque et latence réseau. Vous pouvez choisir entre le mode Démo, qui simule des données aléatoires, ou le mode Direct, qui lit les métriques réelles de votre ordinateur à l'aide de la bibliothèque psutil. Il détecte automatiquement les anomalies et enregistre des alertes. L'analyste IA, propulsé par Groq, utilise Llama 3.1 pour fournir des analyses prédictives et des recommandations. L'application affiche également des informations détaillées sur votre appareil, notamment le type d'appareil, la marque, le modèle, le nom d'hôte, le système d'exploitation, le processeur, la mémoire, les adresses IP, les adaptateurs réseau, et plus encore. Vous pouvez ajuster la fréquence de rafraîchissement, activer le rafraîchissement automatique et lancer l'analyse IA à tout moment. Le tableau de bord montre les tendances en direct et les alertes. Cet outil est idéal pour les ingénieurs plateforme et les architectes logiciels pour démontrer l'observabilité et les opérations assistées par IA.",
+    "Spanish": "Bienvenido al Monitor de salud del sistema en tiempo real, construido por Gesner Deslandes, ingeniero jefe de GlobalInternet.py. Este software puede monitorear métricas del sistema en tiempo real: CPU, memoria, uso de disco y latencia de red. Puede elegir entre el modo Demo, que simula datos aleatorios, o el modo En vivo, que lee métricas reales de su computadora usando la biblioteca psutil. Detecta automáticamente anomalías y registra alertas. El analista de IA, impulsado por Groq, utiliza Llama 3.1 para proporcionar información predictiva y recomendaciones. La aplicación también muestra información detallada del sistema, incluido el tipo de dispositivo, la marca, el modelo, el nombre del host, el sistema operativo, el procesador, la memoria, las direcciones IP, los adaptadores de red y más. Puede ajustar la frecuencia de actualización, habilitar la actualización automática y ejecutar el análisis de IA en cualquier momento. El tablero muestra tendencias en vivo y alertas. Esta herramienta es ideal para ingenieros de plataforma y arquitectos de software para demostrar observabilidad y operaciones asistidas por IA."
 }
 
 # ========== SESSION STATE ==========
@@ -249,68 +251,86 @@ def generate_voice(lang, text):
         st.error(f"{TEXTS[lang]['explain_error']} {e}")
         return None
 
-# ========== SYSTEM INFORMATION ==========
+# ========== SYSTEM INFORMATION (Enhanced Brand/Model) ==========
 def get_system_info():
     info = {}
-    try:
-        info["hostname"] = socket.gethostname()
-    except:
-        info["hostname"] = "N/A"
-    try:
-        info["os"] = f"{platform.system()} {platform.release()} ({platform.version()})"
-    except:
-        info["os"] = "N/A"
-    try:
-        info["processor"] = platform.processor()
-        if not info["processor"]:
-            info["processor"] = "Unknown"
-    except:
-        info["processor"] = "N/A"
-    try:
-        info["cores"] = psutil.cpu_count(logical=True)
-    except:
-        info["cores"] = "N/A"
-    try:
-        mem = psutil.virtual_memory()
-        info["memory_total"] = mem.total
-        info["memory_available"] = mem.available
-        info["memory_used"] = mem.used
-        info["memory_percent"] = mem.percent
-    except:
-        info["memory_total"] = info["memory_available"] = info["memory_used"] = info["memory_percent"] = "N/A"
-    # ---- Device Type & Manufacturer/Model ----
-    try:
-        battery = psutil.sensors_battery()
-        info["device_type"] = "Laptop" if battery is not None else "Desktop"
-    except:
-        info["device_type"] = "Unknown"
+    # Basic info
+    info["hostname"] = socket.gethostname()
+    info["os"] = f"{platform.system()} {platform.release()} ({platform.version()})"
+    info["processor"] = platform.processor() or "Unknown"
+    info["cores"] = psutil.cpu_count(logical=True)
+
+    # Memory
+    mem = psutil.virtual_memory()
+    info["memory_total"] = mem.total
+    info["memory_available"] = mem.available
+    info["memory_used"] = mem.used
+    info["memory_percent"] = mem.percent
+
+    # Device type (Laptop/Desktop)
+    battery = psutil.sensors_battery()
+    info["device_type"] = "Laptop" if battery is not None else "Desktop"
+
+    # Brand & Model detection (improved)
+    brand = "Unknown"
+    model = "Unknown"
+
     try:
         if platform.system() == "Windows":
             import winreg
             try:
                 key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SYSTEM\CurrentControlSet\Control\SystemInformation")
-                info["manufacturer"] = winreg.QueryValueEx(key, "SystemManufacturer")[0]
-                info["model"] = winreg.QueryValueEx(key, "SystemProductName")[0]
+                brand = winreg.QueryValueEx(key, "SystemManufacturer")[0]
+                model = winreg.QueryValueEx(key, "SystemProductName")[0]
             except:
-                info["manufacturer"] = platform.uname().system
-                info["model"] = platform.uname().machine
+                # fallback: use wmic if available
+                try:
+                    output = subprocess.check_output("wmic csproduct get vendor,name", shell=True, text=True)
+                    lines = output.splitlines()
+                    if len(lines) >= 2:
+                        parts = lines[1].strip().split("  ")
+                        brand = parts[0] if parts else "Unknown"
+                        model = parts[-1] if len(parts) > 1 else "Unknown"
+                except:
+                    pass
         elif platform.system() == "Linux":
             try:
                 with open("/sys/class/dmi/id/sys_vendor") as f:
-                    info["manufacturer"] = f.read().strip()
+                    brand = f.read().strip()
             except:
-                info["manufacturer"] = "Unknown"
+                pass
             try:
                 with open("/sys/class/dmi/id/product_name") as f:
-                    info["model"] = f.read().strip()
+                    model = f.read().strip()
             except:
-                info["model"] = platform.uname().machine
-        else:  # macOS or other
-            info["manufacturer"] = platform.uname().system
-            info["model"] = platform.uname().machine
+                pass
+        elif platform.system() == "Darwin":  # macOS
+            try:
+                output = subprocess.check_output(["system_profiler", "SPHardwareDataType"], text=True)
+                for line in output.splitlines():
+                    if "Model Name" in line:
+                        brand = "Apple"
+                        model = line.split(":")[1].strip()
+                        break
+                if model == "Unknown":
+                    # fallback to platform
+                    brand = "Apple"
+                    model = platform.uname().machine
+            except:
+                brand = "Apple"
+                model = platform.uname().machine
     except:
-        info["manufacturer"] = "N/A"
-        info["model"] = "N/A"
+        pass
+
+    # Fallback if still unknown
+    if brand == "" or brand is None:
+        brand = "Unknown"
+    if model == "" or model is None:
+        model = "Unknown"
+
+    info["brand"] = brand
+    info["model"] = model
+
     # IP addresses
     ip_list = []
     mac_list = []
@@ -330,17 +350,18 @@ def get_system_info():
     info["ip_addresses"] = ip_list
     info["mac_addresses"] = mac_list
     info["network_adapters"] = adapter_info
+
     # Gateway
     try:
         gateway = netifaces.gateways()['default'][netifaces.AF_INET][0]
         info["default_gateway"] = gateway
     except:
-        info["default_gateway"] = "N/A"
+        info["default_gateway"] = "Not available"
+
     # DNS
     dns = []
     try:
         if platform.system() == "Windows":
-            import subprocess
             output = subprocess.check_output("ipconfig /all", shell=True, text=True)
             for line in output.splitlines():
                 if "DNS Servers" in line:
@@ -354,19 +375,21 @@ def get_system_info():
                         dns.append(line.split()[1])
     except:
         pass
-    info["dns_servers"] = dns if dns else ["N/A"]
+    info["dns_servers"] = dns if dns else ["Not available"]
+
     # Public IP
     try:
         with urllib.request.urlopen("https://api.ipify.org?format=json", timeout=3) as response:
             data = json.loads(response.read().decode())
-            info["public_ip"] = data.get("ip", "N/A")
+            info["public_ip"] = data.get("ip", "Not available")
     except:
         try:
             with urllib.request.urlopen("https://httpbin.org/ip", timeout=3) as response:
                 data = json.loads(response.read().decode())
-                info["public_ip"] = data.get("origin", "N/A")
+                info["public_ip"] = data.get("origin", "Not available")
         except:
-            info["public_ip"] = "N/A"
+            info["public_ip"] = "Not available"
+
     return info
 
 # ========== METRICS ==========
@@ -474,7 +497,7 @@ def display_system_info(texts):
         with col1:
             device_label = texts["device_desktop"] if info["device_type"] == "Desktop" else texts["device_laptop"]
             st.markdown(f"**{texts['device_type']}:** {device_label}")
-            st.markdown(f"**{texts['manufacturer']}:** {info['manufacturer']}")
+            st.markdown(f"**{texts['brand']}:** {info['brand']}")
             st.markdown(f"**{texts['model']}:** {info['model']}")
             st.markdown(f"**{texts['hostname']}:** {info['hostname']}")
             st.markdown(f"**{texts['os']}:** {info['os']}")
