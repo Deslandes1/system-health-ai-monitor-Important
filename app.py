@@ -80,7 +80,30 @@ TEXTS = {
         "device_desktop": "Desktop",
         "device_laptop": "Laptop",
         "device_unknown": "Unknown",
-        "local_instruction": "To monitor your own laptop, run the app locally:\n`git clone https://github.com/Deslandes1/system-health-ai-monitor-Important && cd system-health-ai-monitor-Important && pip install -r requirements.txt && streamlit run app.py`"
+        "local_instructions_title": "🖥️ Run locally to see your device",
+        "local_instructions_intro": "Clone and run this app on your own machine to monitor your local hardware.",
+        "step1": "Clone the repository",
+        "step1_cmd": "git clone https://github.com/Deslandes1/system-health-ai-monitor-Important",
+        "step1_desc": "Downloads the project files to your computer.",
+        "step1_how": "How: The git clone command copies the entire repository from GitHub to your current folder.",
+        "step2": "Navigate into the folder",
+        "step2_cmd": "cd system-health-ai-monitor-Important",
+        "step2_desc": "Moves you into the project directory.",
+        "step2_how": "How: The cd command changes your terminal's working directory to the project folder.",
+        "step3": "Install the required dependencies",
+        "step3_cmd": "pip install -r requirements.txt",
+        "step3_desc": "Installs all necessary Python libraries (Streamlit, psutil, etc.).",
+        "step3_how": "How: pip reads requirements.txt, downloads each package from PyPI, and installs them into your Python environment.",
+        "step4": "Run the Streamlit app",
+        "step4_cmd": "streamlit run app.py",
+        "step4_desc": "Starts the local web server for the app.",
+        "step4_how": "How: Streamlit compiles app.py, starts a web server on your local machine, and opens port 8501 for browser requests.",
+        "step5": "Open your browser",
+        "step5_desc": "Visit the local URL shown in the terminal (usually http://localhost:8501).",
+        "step5_how": "How: Your browser sends an HTTP request to the local server, which returns the rendered Streamlit interface.",
+        "step6": "Switch to Live mode",
+        "step6_desc": "In the sidebar, select 'Live (Real System)' to see your actual laptop metrics.",
+        "step6_how": "How: The app calls the psutil library, which reads your OS's real‑time performance counters and returns live hardware data."
     },
     "French": {
         "title": "📈 Moniteur de santé système en temps réel",
@@ -133,7 +156,30 @@ TEXTS = {
         "device_desktop": "Ordinateur de bureau",
         "device_laptop": "Ordinateur portable",
         "device_unknown": "Inconnu",
-        "local_instruction": "Pour surveiller votre propre ordinateur, exécutez l'appli localement :\n`git clone https://github.com/Deslandes1/system-health-ai-monitor-Important && cd system-health-ai-monitor-Important && pip install -r requirements.txt && streamlit run app.py`"
+        "local_instructions_title": "🖥️ Exécuter localement pour voir votre appareil",
+        "local_instructions_intro": "Clonez et exécutez cette appli sur votre propre machine pour surveiller votre matériel local.",
+        "step1": "Cloner le dépôt",
+        "step1_cmd": "git clone https://github.com/Deslandes1/system-health-ai-monitor-Important",
+        "step1_desc": "Télécharge les fichiers du projet sur votre ordinateur.",
+        "step1_how": "Comment : la commande git clone copie l'intégralité du dépôt depuis GitHub vers votre dossier courant.",
+        "step2": "Accéder au dossier",
+        "step2_cmd": "cd system-health-ai-monitor-Important",
+        "step2_desc": "Vous déplace dans le répertoire du projet.",
+        "step2_how": "Comment : la commande cd change votre répertoire de travail vers le dossier du projet.",
+        "step3": "Installer les dépendances",
+        "step3_cmd": "pip install -r requirements.txt",
+        "step3_desc": "Installe toutes les bibliothèques Python nécessaires (Streamlit, psutil, etc.).",
+        "step3_how": "Comment : pip lit requirements.txt, télécharge chaque paquet depuis PyPI et les installe dans votre environnement Python.",
+        "step4": "Lancer l'application Streamlit",
+        "step4_cmd": "streamlit run app.py",
+        "step4_desc": "Démarre le serveur web local pour l'application.",
+        "step4_how": "Comment : Streamlit compile app.py, démarre un serveur web sur votre machine et ouvre le port 8501 pour les requêtes navigateur.",
+        "step5": "Ouvrir votre navigateur",
+        "step5_desc": "Visitez l'URL locale affichée dans le terminal (généralement http://localhost:8501).",
+        "step5_how": "Comment : votre navigateur envoie une requête HTTP au serveur local qui retourne l'interface Streamlit rendue.",
+        "step6": "Passer en mode Direct",
+        "step6_desc": "Dans la barre latérale, sélectionnez 'Direct (système réel)' pour voir les métriques réelles de votre ordinateur.",
+        "step6_how": "Comment : l'application appelle la bibliothèque psutil, qui lit les compteurs de performance temps réel de votre OS et renvoie les données matérielles."
     },
     "Spanish": {
         "title": "📈 Monitor de salud del sistema en tiempo real",
@@ -186,7 +232,30 @@ TEXTS = {
         "device_desktop": "Escritorio",
         "device_laptop": "Portátil",
         "device_unknown": "Desconocido",
-        "local_instruction": "Para monitorear su propia computadora, ejecute la app localmente:\n`git clone https://github.com/Deslandes1/system-health-ai-monitor-Important && cd system-health-ai-monitor-Important && pip install -r requirements.txt && streamlit run app.py`"
+        "local_instructions_title": "🖥️ Ejecutar localmente para ver su dispositivo",
+        "local_instructions_intro": "Clone y ejecute esta app en su propia máquina para monitorear su hardware local.",
+        "step1": "Clonar el repositorio",
+        "step1_cmd": "git clone https://github.com/Deslandes1/system-health-ai-monitor-Important",
+        "step1_desc": "Descarga los archivos del proyecto a su computadora.",
+        "step1_how": "Cómo: el comando git clone copia todo el repositorio desde GitHub a su carpeta actual.",
+        "step2": "Navegar a la carpeta",
+        "step2_cmd": "cd system-health-ai-monitor-Important",
+        "step2_desc": "Lo mueve al directorio del proyecto.",
+        "step2_how": "Cómo: el comando cd cambia su directorio de trabajo actual a la carpeta del proyecto.",
+        "step3": "Instalar las dependencias",
+        "step3_cmd": "pip install -r requirements.txt",
+        "step3_desc": "Instala todas las bibliotecas de Python necesarias (Streamlit, psutil, etc.).",
+        "step3_how": "Cómo: pip lee requirements.txt, descarga cada paquete desde PyPI y los instala en su entorno Python.",
+        "step4": "Ejecutar la aplicación Streamlit",
+        "step4_cmd": "streamlit run app.py",
+        "step4_desc": "Inicia el servidor web local para la aplicación.",
+        "step4_how": "Cómo: Streamlit compila app.py, inicia un servidor web en su máquina y abre el puerto 8501 para peticiones del navegador.",
+        "step5": "Abrir su navegador",
+        "step5_desc": "Visite la URL local que se muestra en la terminal (generalmente http://localhost:8501).",
+        "step5_how": "Cómo: su navegador envía una solicitud HTTP al servidor local, que devuelve la interfaz de Streamlit renderizada.",
+        "step6": "Cambiar a modo En vivo",
+        "step6_desc": "En la barra lateral, seleccione 'En vivo (sistema real)' para ver las métricas reales de su computadora.",
+        "step6_how": "Cómo: la aplicación llama a la biblioteca psutil, que lee los contadores de rendimiento en tiempo real de su SO y devuelve los datos del hardware."
     }
 }
 
@@ -639,11 +708,43 @@ with st.sidebar:
     texts = TEXTS[st.session_state.lang]
     
     st.markdown("---")
-    # --- Local instructions ---
-    with st.expander("🖥️ Run locally to see your device", expanded=False):
-        st.markdown("Clone and run this app on your own machine to monitor your local hardware.")
-        st.code(texts["local_instruction"], language="bash")
-        st.caption("Requires Python 3.8+ and Git.")
+    # --- Local instructions expander ---
+    with st.expander(texts["local_instructions_title"], expanded=False):
+        st.markdown(texts["local_instructions_intro"])
+        st.markdown("---")
+        # Step 1
+        st.markdown(f"**{texts['step1']}**")
+        st.code(texts["step1_cmd"], language="bash")
+        st.caption(texts["step1_desc"])
+        st.caption(texts["step1_how"])
+        st.markdown("---")
+        # Step 2
+        st.markdown(f"**{texts['step2']}**")
+        st.code(texts["step2_cmd"], language="bash")
+        st.caption(texts["step2_desc"])
+        st.caption(texts["step2_how"])
+        st.markdown("---")
+        # Step 3
+        st.markdown(f"**{texts['step3']}**")
+        st.code(texts["step3_cmd"], language="bash")
+        st.caption(texts["step3_desc"])
+        st.caption(texts["step3_how"])
+        st.markdown("---")
+        # Step 4
+        st.markdown(f"**{texts['step4']}**")
+        st.code(texts["step4_cmd"], language="bash")
+        st.caption(texts["step4_desc"])
+        st.caption(texts["step4_how"])
+        st.markdown("---")
+        # Step 5
+        st.markdown(f"**{texts['step5']}**")
+        st.caption(texts["step5_desc"])
+        st.caption(texts["step5_how"])
+        st.markdown("---")
+        # Step 6
+        st.markdown(f"**{texts['step6']}**")
+        st.caption(texts["step6_desc"])
+        st.caption(texts["step6_how"])
     
     st.markdown("---")
     mode_options = ["Demo (Simulated)", "Live (Real System)"]
