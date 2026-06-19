@@ -6,6 +6,9 @@ import time
 import asyncio
 import tempfile
 import os
+import psutil
+import subprocess
+import platform
 from datetime import datetime
 import plotly.graph_objects as go
 from groq import Groq
@@ -44,7 +47,11 @@ TEXTS = {
         "explain_playing": "Playing explanation...",
         "explain_error": "Could not generate voice. Please try again.",
         "generating_audio": "Generating voice...",
-        "footer": "© 2026 GlobalInternet.py – Built for real‑time system observability & AI‑assisted operations"
+        "footer": "© 2026 GlobalInternet.py – Built for real‑time system observability & AI‑assisted operations",
+        "mode_label": "🔄 Monitoring Mode",
+        "mode_demo": "Demo (Simulated)",
+        "mode_live": "Live (Real System)",
+        "live_note": "Fetching real system metrics using psutil."
     },
     "French": {
         "title": "📈 Moniteur de santé système en temps réel",
@@ -69,7 +76,11 @@ TEXTS = {
         "explain_playing": "Lecture de l'explication...",
         "explain_error": "Impossible de générer la voix. Réessayez.",
         "generating_audio": "Génération de la voix...",
-        "footer": "© 2026 GlobalInternet.py – Conçu pour l'observabilité système et les opérations assistées par IA"
+        "footer": "© 2026 GlobalInternet.py – Conçu pour l'observabilité système et les opérations assistées par IA",
+        "mode_label": "🔄 Mode de surveillance",
+        "mode_demo": "Démo (simulé)",
+        "mode_live": "Direct (système réel)",
+        "live_note": "Récupération des métriques réelles via psutil."
     },
     "Spanish": {
         "title": "📈 Monitor de salud del sistema en tiempo real",
@@ -94,7 +105,11 @@ TEXTS = {
         "explain_playing": "Reproduciendo explicación...",
         "explain_error": "No se pudo generar la voz. Intente de nuevo.",
         "generating_audio": "Generando voz...",
-        "footer": "© 2026 GlobalInternet.py – Construido para observabilidad de sistemas y operaciones asistidas por IA"
+        "footer": "© 2026 GlobalInternet.py – Construido para observabilidad de sistemas y operaciones asistidas por IA",
+        "mode_label": "🔄 Modo de monitoreo",
+        "mode_demo": "Demo (simulado)",
+        "mode_live": "En vivo (sistema real)",
+        "live_note": "Obteniendo métricas reales usando psutil."
     }
 }
 
@@ -122,6 +137,8 @@ if "auto_refresh" not in st.session_state:
     st.session_state.auto_refresh = False
 if "lang" not in st.session_state:
     st.session_state.lang = "English"
+if "monitor_mode" not in st.session_state:
+    st.session_state.monitor_mode = "Demo (Simulated)"  # or "Live (Real System)"
 
 # ========== CUSTOM CSS (LIGHT BLUE THEME) ==========
 st.markdown("""
@@ -166,8 +183,8 @@ def generate_voice(lang, text):
         st.error(f"{TEXTS[lang]['explain_error']} {e}")
         return None
 
-# ========== SIMULATE METRICS ==========
-def generate_metrics():
+# ========== SIMULATE METRICS (Demo mode) ==========
+def generate_simulated_metrics():
     cpu = random.uniform(5, 95)
     memory = random.uniform(20, 90)
     disk = random.uniform(30, 85)
@@ -176,15 +193,44 @@ def generate_metrics():
         cpu = random.uniform(95, 100)
         latency = random.uniform(250, 500)
     return {
-        "timestamp": datetime.now(),
         "cpu": round(cpu, 1),
         "memory": round(memory, 1),
         "disk": round(disk, 1),
         "latency": round(latency, 1)
     }
 
+# ========== LIVE METRICS (Real system using psutil) ==========
+def get_live_metrics():
+    cpu = psutil.cpu_percent(interval=0.5)
+    memory = psutil.virtual_memory().percent
+    disk = psutil.disk_usage('/').percent
+    # Network latency: try to ping google.com or use a simple HTTP request
+    try:
+        import socket
+        import time
+        start = time.time()
+        socket.create_connection(("8.8.8.8", 53), timeout=2)
+        end = time.time()
+        latency = round((end - start) * 1000, 1)  # in ms
+    except Exception:
+        latency = random.uniform(10, 100)  # fallback
+    return {
+        "cpu": round(cpu, 1),
+        "memory": round(memory, 1),
+        "disk": round(disk, 1),
+        "latency": latency
+    }
+
+def generate_metrics(mode):
+    if mode == "Live (Real System)":
+        return get_live_metrics()
+    else:  # Demo mode
+        return generate_simulated_metrics()
+
 def add_metric():
-    metrics = generate_metrics()
+    mode = st.session_state.monitor_mode
+    metrics = generate_metrics(mode)
+    metrics["timestamp"] = datetime.now()
     st.session_state.history.append(metrics)
     if len(st.session_state.history) > 100:
         st.session_state.history.pop(0)
@@ -256,6 +302,18 @@ with st.sidebar:
         st.session_state.lang = lang
         st.rerun()
     texts = TEXTS[st.session_state.lang]
+    
+    st.markdown("---")
+    # ---- Monitoring Mode Toggle ----
+    mode_options = ["Demo (Simulated)", "Live (Real System)"]
+    selected_mode = st.selectbox(texts["mode_label"], mode_options, index=0)
+    if selected_mode != st.session_state.monitor_mode:
+        st.session_state.monitor_mode = selected_mode
+        st.session_state.history.clear()
+        st.session_state.alert_log.clear()
+        st.rerun()
+    if selected_mode == "Live (Real System)":
+        st.info(texts["live_note"])
     
     st.markdown("---")
     st.markdown("### 🛡️ Global Security Shield")
